@@ -98,24 +98,27 @@ function (dojo, declare) {
                 for (var cardNr = 0; cardNr < this.cardsPerRow; cardNr++) {
                     // Build card type id
                     var card_type_id = this.getCardUniqueId(gameNr, cardNr);
-                    this.playerHand.addItemType(card_type_id, card_type_id, g_gamethemeurl + 'img/hogwarts_cards.png', card_type_id);
+                    this.playerHand.addItemType(card_type_id, 0, g_gamethemeurl + 'img/hogwarts_cards.png', card_type_id);
                     this.hogwartsCards.addItemType(card_type_id, 0, g_gamethemeurl + 'img/hogwarts_cards.png', card_type_id);
                     this.playedCards.addItemType(card_type_id, 0, g_gamethemeurl + 'img/hogwarts_cards.png', card_type_id);
                 }
             }
 
-            // All Hogwarts Cards
+            for ( var i in gamedatas.hogwartsCards) {
+                var card = gamedatas.hogwartsCards[i];
+                this.hogwartsCards.addToStockWithId(this.getCardUniqueId(card.type, card.type_arg), card.id);
+            }
+
             for ( var i in gamedatas.hand) {
                 var card = gamedatas.hand[i];
                 this.playerHand.addToStockWithId(this.getCardUniqueId(card.type, card.type_arg), card.id);
             }
 
-            //this.playerHand.addToStockWithId(2, 42);
 
-            this.hogwartsCards.addToStockWithId(0, 1);
-            this.hogwartsCards.addToStockWithId(1, 2);
-            this.hogwartsCards.addToStockWithId(2, 3);
-            this.hogwartsCards.addToStockWithId(3, 4);
+            // this.hogwartsCards.addToStockWithId(0, 1);
+            // this.hogwartsCards.addToStockWithId(1, 2);
+            // this.hogwartsCards.addToStockWithId(2, 3);
+            // this.hogwartsCards.addToStockWithId(3, 4);
 
             dojo.connect( this.hogwartsCards, 'onChangeSelection', this, 'onHogwartsCardSelectionChanged' );
             dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
@@ -240,11 +243,19 @@ function (dojo, declare) {
             var items = this.hogwartsCards.getSelectedItems();
             if (items.length > 0) {
                 let card = items[0];
-
-                this.playerHand.addToStockWithId(card.type, card.id, 'hogwarts_cards_item_' + card.id);
-                this.hogwartsCards.removeFromStockById(card.id);
-
+                let action = 'acquireHogwartsCard';
+                if (this.checkAction(action, true)) {
+                    this.ajaxcall("/" + this.game_name + "/" + this.game_name + "/" + action + ".html", {
+                        id : card.id,
+                        lock : true
+                    }, this, function(result) {}, function(is_error) {});
+                }
                 this.hogwartsCards.unselectAll();
+
+                // this.playerHand.addToStockWithId(card.type, card.id, 'hogwarts_cards_item_' + card.id);
+                // this.hogwartsCards.removeFromStockById(card.id);
+                //
+                // this.hogwartsCards.unselectAll();
             }
         },
 
@@ -321,7 +332,8 @@ function (dojo, declare) {
             //            see what is happening in the game.
             // dojo.subscribe( 'cardPlayed', this, "notif_cardPlayed" );
             // this.notifqueue.setSynchronous( 'cardPlayed', 3000 );
-            // 
+            //
+            dojo.subscribe( 'acquireHogwartsCard', this, "notif_acquireHogwartsCard" );
         },  
         
         // TODO: from this point and below, you can write your game notifications handling methods
@@ -340,5 +352,13 @@ function (dojo, declare) {
         },    
         
         */
+        notif_acquireHogwartsCard : function(notif) {
+            let typeId = this.getCardUniqueId(notif.args.card_game_nr, notif.args.card_card_nr);
+            this.playerHand.addToStockWithId(typeId, notif.args.card_id, 'hogwarts_cards_item_' + notif.args.card_id);
+            this.hogwartsCards.removeFromStockById(notif.args.card_id);
+            // move acquired card to player
+            // notif.args.card_id
+            // notif.args.player_id
+        },
    });             
 });

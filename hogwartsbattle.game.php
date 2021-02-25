@@ -105,6 +105,10 @@ class HogwartsBattle extends Table
         /************ Start the game initialization *****/
 
         $this->hogwartsCards->createCards($this->hogwartsCardsLibrary->game1Cards(), 'deck');
+        $this->hogwartsCards->shuffle('deck');
+        $this->hogwartsCards->pickCardsForLocation(6, 'deck', 'revealed');
+
+
 
         $playerHeroes = self::getCollectionFromDB("SELECT player_id id, player_hero heroId FROM player", true);
         foreach ($playerHeroes as $player_id => $heroId) {
@@ -114,8 +118,6 @@ class HogwartsBattle extends Table
             $deck->shuffle('deck');
             $deck->pickCards(5, 'deck', $player_id);
         }
-
-        $this->hogwartsCards->shuffle('deck');
 
         // Init global values with their initial values
         //self::setGameStateInitialValue( 'my_first_global_variable', 0 );
@@ -159,7 +161,7 @@ class HogwartsBattle extends Table
 
         $result['hand'] = $this->heroDecks[$current_hero_id]->getCardsInLocation('hand');
 
-        $result['hogwartsCards'] = $this->hogwartsCards->getCardsInLocation('deck');
+        $result['hogwartsCards'] = $this->hogwartsCards->getCardsInLocation('revealed');
   
         return $result;
     }
@@ -227,6 +229,31 @@ class HogwartsBattle extends Table
     
     */
 
+    function acquireHogwartsCard($cardId) {
+        self::checkAction("acquireHogwartsCard");
+        $player_id = self::getActivePlayerId();
+        $hero_id = self::getUniqueValueFromDB("SELECT player_hero FROM player where player_id = " . $player_id);
+        $this->hogwartsCards->moveCard($cardId, 'dev0');
+        // TODO has to go to discard
+        $deckCard = $this->hogwartsCards->getCard($cardId);
+        $this->heroDecks[$hero_id]->createCards($this->hogwartsCardsLibrary->asCardArray($deckCard['type'], $deckCard['type_arg']), 'hand', $player_id);
+        $card = $this->hogwartsCardsLibrary->getCard($deckCard['type'], $deckCard['type_arg']);
+        self::notifyAllPlayers(
+            'acquireHogwartsCard',
+            clienttranslate('${player_name} acquires ${card_name} for ${card_cost}'),
+            array (
+                'i18n' => array ('color_displayed','value_displayed' ),
+                'card_id' => $cardId,
+                'card_game_nr' => $card->gameNr,
+                'card_card_nr' => $card->cardNr,
+                'player_id' => $player_id,
+                'player_name' => self::getActivePlayerName(),
+                'card_name' => $card->name,
+                'card_cost' => $card->cost,
+            )
+        );
+        $this->gamestate->nextState('acquireHogwartsCard');
+    }
     
 //////////////////////////////////////////////////////////////////////////////
 //////////// Game state arguments
@@ -276,6 +303,10 @@ class HogwartsBattle extends Table
         $this->gamestate->nextState( 'some_gamestate_transition' );
     }    
     */
+
+//    function state_acquireHogwartsCard() {
+//        $this->gamestate->nextState("");
+//    }
 
 //////////////////////////////////////////////////////////////////////////////
 //////////// Zombie
