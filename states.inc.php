@@ -65,19 +65,19 @@ $machinestates = array(
 
     20 => array(
         "name" => "playerTurn",
-        "description" => clienttranslate('${actplayer} must play a card or pass'),
-        "descriptionmyturn" => clienttranslate('${you} must play a card or pass'),
+        "description" => clienttranslate('${actplayer} must play cards or end the turn'),
+        "descriptionmyturn" => clienttranslate('${you} must play cards or end your turn'),
         "type" => "activeplayer",
         "possibleactions" => array("playCard", "acquireHogwartsCard", "endTurn"),
-        "transitions" => array("playCard" => 20, "acquireHogwartsCard" => 20, "endTurn" => 20)
+        "transitions" => array("playCard" => 20, "acquireHogwartsCard" => 20, "endTurn" => 66)
     ),
-//    22 => array(
-//        "name" => "acquireHogwartsCard",
-//        "description" => "",
-//        "type" => "game",
-//        "action" => "state_acquireHogwartsCard",
-//        "transitions" => array("" => 20)
-//    ),
+    66 => array(
+        "name" => "endTurn",
+        "description" => "",
+        "type" => "game",
+        "action" => "state_endTurn",
+        "transitions" => array("" => 20)
+    ),
 
     /*
         Examples:

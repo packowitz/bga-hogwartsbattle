@@ -22,11 +22,10 @@
  */
 
 
-class action_hogwartsbattle extends APP_GameAction
-{
+class action_hogwartsbattle extends APP_GameAction {
+
     // Constructor: please do not modify
-    public function __default()
-    {
+    public function __default() {
         if (self::isArg('notifwindow')) {
             $this->view = "common_notifwindow";
             $this->viewArgs['table'] = self::getArg("table", AT_posint, true);
@@ -36,13 +35,16 @@ class action_hogwartsbattle extends APP_GameAction
         }
     }
 
-    // TODO: defines your action entry points there
-
-    public function acquireHogwartsCard()
-    {
+    public function acquireHogwartsCard() {
         self::setAjaxMode();
         $card_id = self::getArg("id", AT_posint, true);
         $this->game->acquireHogwartsCard($card_id);
+        self::ajaxResponse();
+    }
+
+    public function endTurn() {
+        self::setAjaxMode();
+        $this->game->endTurn();
         self::ajaxResponse();
     }
 

@@ -152,35 +152,13 @@ class HogwartsBattle extends Table
         $current_player_id = self::getCurrentPlayerId();    // !! We must only return informations visible by this player !!
         $current_hero_id = self::getUniqueValueFromDB("SELECT player_hero FROM player where player_id = " . $current_player_id);
     
-        // Get information about players
-        // Note: you can retrieve some extra field you added for "player" table in "dbmodel.sql" if you need it.
-        $sql = "SELECT player_id id, player_hero hero_id, player_health health, player_influence influence, player_attack attack, player_score score FROM player ";
-        $result['players'] = self::getCollectionFromDb($sql);
-
-        foreach ($result['players'] as $player_id => $player) {
-            $heroName = "";
-            switch ($player['hero_id']) {
-                case HogwartsCards::$harryId:
-                    $heroName = "Harry";
-                    break;
-                case HogwartsCards::$ronId:
-                    $heroName = "Ron";
-                    break;
-                case HogwartsCards::$hermioneId:
-                    $heroName = "Hermione";
-                    break;
-                case HogwartsCards::$nevilleId:
-                    $heroName = "Neville";
-                    break;
-            }
-            $result['players'][$player_id]['hero_name'] = clienttranslate($heroName);
-        }
+        $result['players'] = self::getPlayerStats();
 
         // TODO: Gather all information about current game situation (visible by player $current_player_id).
 
         $result['hand'] = $this->heroDecks[$current_hero_id]->getCardsInLocation('hand');
 
-        $result['hogwartsCards'] = $this->hogwartsCards->getCardsInLocation('revealed');
+        $result['hogwarts_cards'] = $this->hogwartsCards->getCardsInLocation('revealed');
   
         return $result;
     }
@@ -210,6 +188,44 @@ class HogwartsBattle extends Table
     /*
         In this space, you can put any utility methods useful for your game logic
     */
+
+    function getPlayerStats() {
+        $sql = "SELECT player_id id, player_hero hero_id, player_health health, player_influence influence, player_attack attack, player_score score FROM player ";
+        $players = self::getCollectionFromDb($sql);
+
+        foreach ($players as $player_id => $player) {
+            // Add hero name
+            $heroName = "";
+            switch ($player['hero_id']) {
+                case HogwartsCards::$harryId:
+                    $heroName = "Harry";
+                    break;
+                case HogwartsCards::$ronId:
+                    $heroName = "Ron";
+                    break;
+                case HogwartsCards::$hermioneId:
+                    $heroName = "Hermione";
+                    break;
+                case HogwartsCards::$nevilleId:
+                    $heroName = "Neville";
+                    break;
+            }
+            $players[$player_id]['hero_name'] = clienttranslate($heroName);
+
+            // Add hand cards
+            $players[$player_id]['hand_cards'] = self::getDeck($player_id)->countCardInLocation('hand');
+        }
+
+        return $players;
+    }
+
+    function getHeroId($playerId) {
+        return self::getUniqueValueFromDB("SELECT player_hero FROM player where player_id = " . $playerId);
+    }
+
+    function getDeck($playerId) {
+        return $this->heroDecks[self::getHeroId($playerId)];
+    }
 
 
 
@@ -248,24 +264,65 @@ class HogwartsBattle extends Table
     
     */
 
+    function endTurn() {
+        self::checkAction("endTurn");
+        $this->gamestate->nextState('endTurn');
+    }
+
+    function state_endTurn() {
+        $playerId = self::getActivePlayerId();
+        $deck = self::getDeck($playerId);
+
+        // Clean up board and draw 5 new cards
+        $deck->moveAllCardsInLocation('hand', 'discard');
+        $deck->moveAllCardsInLocation('played', 'discard');
+        $newHandCards = $deck->pickCards(5, 'deck', $playerId);
+        self::DbQuery("UPDATE player set player_attack = 0, player_influence = 0 where player_id = " . $playerId);
+
+        // Refill hogwarts cards
+        $missingCards = 6 - $this->hogwartsCards->countCardInLocation('revealed');
+        $newHogwartsCards = $this->hogwartsCards->pickCardsForLocation($missingCards, 'deck', 'revealed');
+
+        // Notify players
+        self::notifyAllPlayers(
+            'endTurn',
+            clienttranslate('${player_name} ends turn'),
+            array (
+                'i18n' => array ('color_displayed','value_displayed' ),
+                'players' => self::getPlayerStats(),
+                'new_hogwarts_cards' => $newHogwartsCards,
+                'player_id' => $playerId,
+                'player_name' => self::getActivePlayerName(),
+                'new_hand_cards' => $newHandCards
+            )
+        );
+
+        // Next Player
+        $this->activeNextPlayer();
+        self::giveExtraTime(self::getCurrentPlayerId());
+        $this->gamestate->nextState();
+    }
+
     function acquireHogwartsCard($cardId) {
         self::checkAction("acquireHogwartsCard");
-        $player_id = self::getActivePlayerId();
-        $hero_id = self::getUniqueValueFromDB("SELECT player_hero FROM player where player_id = " . $player_id);
+        $playerId = self::getActivePlayerId();
+        // TODO check player has enough influence
+        // TODO pay costs
         $this->hogwartsCards->moveCard($cardId, 'dev0');
         // TODO has to go to discard
         $deckCard = $this->hogwartsCards->getCard($cardId);
-        $this->heroDecks[$hero_id]->createCards($this->hogwartsCardsLibrary->asCardArray($deckCard['type'], $deckCard['type_arg']), 'hand', $player_id);
+        self::getDeck($playerId)->createCards($this->hogwartsCardsLibrary->asCardArray($deckCard['type'], $deckCard['type_arg']), 'hand', $playerId);
         $card = $this->hogwartsCardsLibrary->getCard($deckCard['type'], $deckCard['type_arg']);
         self::notifyAllPlayers(
             'acquireHogwartsCard',
             clienttranslate('${player_name} acquires ${card_name} for ${card_cost}'),
             array (
                 'i18n' => array ('color_displayed','value_displayed' ),
+                'players' => self::getPlayerStats(),
                 'card_id' => $cardId,
                 'card_game_nr' => $card->gameNr,
                 'card_card_nr' => $card->cardNr,
-                'player_id' => $player_id,
+                'player_id' => $playerId,
                 'player_name' => self::getActivePlayerName(),
                 'card_name' => $card->name,
                 'card_cost' => $card->cost,

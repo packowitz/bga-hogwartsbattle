@@ -28,11 +28,11 @@ function (dojo, declare) {
             this.cardwidth = 200;
             this.cardheight = 280;
             this.cardsPerRow = 16;
-              
-            // Here, you can init the global variables of your user interface
-            // Example:
-            // this.myGlobalValue = 0;
 
+            this.health_counters = {};
+            this.attack_counters = {};
+            this.influence_counters = {};
+            this.handCards_counters = {};
         },
         
         /*
@@ -53,10 +53,7 @@ function (dojo, declare) {
             console.log( "Starting game setup" );
             
             // Setting up player boards
-            this.health_counters = {};
-            this.attack_counters = {};
-            this.influence_counters = {};
-            for( var player_id in gamedatas.players )
+            for(var player_id in gamedatas.players)
             {
                 var player = gamedatas.players[player_id];
                          
@@ -66,18 +63,20 @@ function (dojo, declare) {
 
                 // create counter per player
                 this.health_counters[player_id] = new ebg.counter();
-                this.health_counters[player_id].create('health_icon_p' + player_id);
+                this.health_counters[player_id].create('health_stat_p' + player_id);
                 this.health_counters[player_id].setValue(player.health);
 
                 this.attack_counters[player_id] = new ebg.counter();
-                this.attack_counters[player_id].create('attack_icon_p' + player_id);
+                this.attack_counters[player_id].create('attack_stat_p' + player_id);
                 this.attack_counters[player_id].setValue(player.attack);
 
                 this.influence_counters[player_id] = new ebg.counter();
-                this.influence_counters[player_id].create('influence_icon_p' + player_id);
+                this.influence_counters[player_id].create('influence_stat_p' + player_id);
                 this.influence_counters[player_id].setValue(player.influence);
 
-
+                this.handCards_counters[player_id] = new ebg.counter();
+                this.handCards_counters[player_id].create('hand_cards_stat_p' + player_id);
+                this.handCards_counters[player_id].setValue(player.hand_cards);
             }
             
             // TODO: Set up your game interface here, according to "gamedatas"
@@ -117,28 +116,15 @@ function (dojo, declare) {
             for (var gameNr = 0; gameNr <= 1; gameNr++) {
                 for (var cardNr = 0; cardNr < this.cardsPerRow; cardNr++) {
                     // Build card type id
-                    var card_type_id = this.getCardUniqueId(gameNr, cardNr);
+                    var card_type_id = this.getHogwartsCardTypeId(gameNr, cardNr);
                     this.playerHand.addItemType(card_type_id, 0, g_gamethemeurl + 'img/hogwarts_cards.png', card_type_id);
                     this.hogwartsCards.addItemType(card_type_id, 0, g_gamethemeurl + 'img/hogwarts_cards.png', card_type_id);
                     this.playedCards.addItemType(card_type_id, 0, g_gamethemeurl + 'img/hogwarts_cards.png', card_type_id);
                 }
             }
 
-            for ( var i in gamedatas.hogwartsCards) {
-                var card = gamedatas.hogwartsCards[i];
-                this.hogwartsCards.addToStockWithId(this.getCardUniqueId(card.type, card.type_arg), card.id);
-            }
-
-            for ( var i in gamedatas.hand) {
-                var card = gamedatas.hand[i];
-                this.playerHand.addToStockWithId(this.getCardUniqueId(card.type, card.type_arg), card.id);
-            }
-
-
-            // this.hogwartsCards.addToStockWithId(0, 1);
-            // this.hogwartsCards.addToStockWithId(1, 2);
-            // this.hogwartsCards.addToStockWithId(2, 3);
-            // this.hogwartsCards.addToStockWithId(3, 4);
+            this.revealHogwartsCards(gamedatas.hogwarts_cards);
+            this.drawHogwartsCards(gamedatas.hand);
 
             dojo.connect( this.hogwartsCards, 'onChangeSelection', this, 'onHogwartsCardSelectionChanged' );
             dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
@@ -228,21 +214,56 @@ function (dojo, declare) {
                     this.addActionButton( 'button_3_id', _('Button 3 label'), 'onMyMethodToCall3' ); 
                     break;
 */
+                    case 'playerTurn':
+                        this.addActionButton( 'endTurnId', 'End turn', 'onEndTurn' );
+                        break;
                 }
             }
         },        
 
         ///////////////////////////////////////////////////
         //// Utility methods
-        
-        /*
-        
-            Here, you can defines some utility methods that you can use everywhere in your javascript
-            script.
-        
-        */
-        getCardUniqueId : function(gameNr, cardNr) {
+
+        updatePlayerStats(players) {
+            if (players) {
+                for(let playerId in players) {
+                    let player = players[playerId];
+
+                    let healthDiff = player.health - this.health_counters[playerId].getValue();
+                    this.health_counters[playerId].incValue(healthDiff);
+
+                    let attackDiff = player.attack - this.attack_counters[playerId].getValue();
+                    this.attack_counters[playerId].incValue(attackDiff);
+
+                    let influenceDiff = player.influence - this.influence_counters[playerId].getValue();
+                    this.influence_counters[playerId].incValue(influenceDiff);
+
+                    let handCardsDiff = player.hand_cards - this.handCards_counters[playerId].getValue();
+                    this.handCards_counters[playerId].incValue(handCardsDiff);
+                }
+            }
+        },
+
+        getHogwartsCardTypeId : function(gameNr, cardNr) {
             return parseInt(gameNr) * this.cardsPerRow + parseInt(cardNr);
+        },
+
+        revealHogwartsCards: function(hogwartsCards) {
+            if (hogwartsCards) {
+                for (let i in hogwartsCards) {
+                    let card = hogwartsCards[i];
+                    this.hogwartsCards.addToStockWithId(this.getHogwartsCardTypeId(card.type, card.type_arg), card.id);
+                }
+            }
+        },
+
+        drawHogwartsCards: function(hogwartsCards) {
+            if (hogwartsCards) {
+                for ( var i in hogwartsCards) {
+                    var card = hogwartsCards[i];
+                    this.playerHand.addToStockWithId(this.getHogwartsCardTypeId(card.type, card.type_arg), card.id);
+                }
+            }
         },
 
 
@@ -259,6 +280,18 @@ function (dojo, declare) {
             _ make a call to the game server
         
         */
+
+        onEndTurn: function (evt) {
+            dojo.stopEvent(evt);
+
+            let action = 'endTurn';
+            if (this.checkAction(action, true)) {
+                this.ajaxcall("/" + this.game_name + "/" + this.game_name + "/" + action + ".html", {
+                    lock : true
+                }, this, function(result) {}, function(is_error) {});
+            }
+        },
+
         onHogwartsCardSelectionChanged : function() {
             var items = this.hogwartsCards.getSelectedItems();
             if (items.length > 0) {
@@ -353,8 +386,9 @@ function (dojo, declare) {
             // dojo.subscribe( 'cardPlayed', this, "notif_cardPlayed" );
             // this.notifqueue.setSynchronous( 'cardPlayed', 3000 );
             //
+            dojo.subscribe( 'endTurn', this, "notif_endTurn" );
             dojo.subscribe( 'acquireHogwartsCard', this, "notif_acquireHogwartsCard" );
-        },  
+        },
         
         // TODO: from this point and below, you can write your game notifications handling methods
         
@@ -372,8 +406,20 @@ function (dojo, declare) {
         },    
         
         */
-        notif_acquireHogwartsCard : function(notif) {
-            let typeId = this.getCardUniqueId(notif.args.card_game_nr, notif.args.card_card_nr);
+
+        notif_endTurn: function (notif) {
+            this.updatePlayerStats(notif.args.players);
+            this.revealHogwartsCards(notif.args.new_hogwarts_cards);
+            this.playedCards.removeAll();
+            if (this.player_id == notif.args.player_id) {
+                this.playerHand.removeAll();
+                this.drawHogwartsCards(notif.args.new_hand_cards);
+            }
+        },
+
+        notif_acquireHogwartsCard: function(notif) {
+            this.updatePlayerStats(notif.args.players);
+            let typeId = this.getHogwartsCardTypeId(notif.args.card_game_nr, notif.args.card_card_nr);
             this.playerHand.addToStockWithId(typeId, notif.args.card_id, 'hogwarts_cards_item_' + notif.args.card_id);
             this.hogwartsCards.removeFromStockById(notif.args.card_id);
             // move acquired card to player

@@ -71,10 +71,10 @@
     display: flex;
     height: 35px;
     align-items: center;
+    justify-content: space-between;
 }
 
 .player_stat {
-    margin-right: 10px;
     display: flex;
     align-items: center;
 }
@@ -85,8 +85,8 @@
     display: inline-block;
     margin-right: 2px;
     background-image: url(img/sprites.png);
-    background-size: 160px;
-    background-position-x: 72%;
+    background-size: 220px;
+    background-position-x: 50%;
 }
 
 .attack_icon {
@@ -95,8 +95,8 @@
     display: inline-block;
     margin-right: 2px;
     background-image: url(img/sprites.png);
-    background-size: 160px;
-    background-position-x: 86%;
+    background-size: 220px;
+    background-position-x: 60%;
 }
 
 .influence_icon {
@@ -105,8 +105,18 @@
     display: inline-block;
     margin-right: 2px;
     background-image: url(img/sprites.png);
-    background-size: 160px;
-    background-position-x: 100%;
+    background-size: 220px;
+    background-position-x: 70%;
+}
+
+.hand_cards_icon {
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+    margin-right: 2px;
+    background-image: url(img/sprites.png);
+    background-size: 220px;
+    background-position-x: 80%;
 }
 
 

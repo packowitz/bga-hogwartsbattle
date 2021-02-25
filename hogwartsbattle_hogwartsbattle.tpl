@@ -57,9 +57,10 @@ var jstpl_some_game_item='<div class="my_game_item" id="my_game_item_${MY_ITEM_I
 
 var jstpl_player_board = '<div class="player_stats">\
   <div class="player_stat">${hero_name}</div>\
-  <div class="player_stat"><div class="health_icon"></div><span id="health_icon_p${id}">0</span></div>\
-  <div class="player_stat"><div class="attack_icon"></div><span id="attack_icon_p${id}">0</span></div>\
-  <div class="player_stat"><div class="influence_icon"></div><span id="influence_icon_p${id}">0</span></div>\
+  <div class="player_stat"><div class="health_icon"></div><span id="health_stat_p${id}">0</span></div>\
+  <div class="player_stat"><div class="attack_icon"></div><span id="attack_stat_p${id}">0</span></div>\
+  <div class="player_stat"><div class="influence_icon"></div><span id="influence_stat_p${id}">0</span></div>\
+  <div class="player_stat"><div class="hand_cards_icon"></div><span id="hand_cards_stat_p${id}">0</span></div>\
 </div>';
 
 </script>  
