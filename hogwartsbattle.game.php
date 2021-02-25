@@ -154,9 +154,28 @@ class HogwartsBattle extends Table
     
         // Get information about players
         // Note: you can retrieve some extra field you added for "player" table in "dbmodel.sql" if you need it.
-        $sql = "SELECT player_id id, player_hero heroId, player_score score FROM player ";
+        $sql = "SELECT player_id id, player_hero hero_id, player_health health, player_influence influence, player_attack attack, player_score score FROM player ";
         $result['players'] = self::getCollectionFromDb($sql);
-  
+
+        foreach ($result['players'] as $player_id => $player) {
+            $heroName = "";
+            switch ($player['hero_id']) {
+                case HogwartsCards::$harryId:
+                    $heroName = "Harry";
+                    break;
+                case HogwartsCards::$ronId:
+                    $heroName = "Ron";
+                    break;
+                case HogwartsCards::$hermioneId:
+                    $heroName = "Hermione";
+                    break;
+                case HogwartsCards::$nevilleId:
+                    $heroName = "Neville";
+                    break;
+            }
+            $result['players'][$player_id]['hero_name'] = clienttranslate($heroName);
+        }
+
         // TODO: Gather all information about current game situation (visible by player $current_player_id).
 
         $result['hand'] = $this->heroDecks[$current_hero_id]->getCardsInLocation('hand');

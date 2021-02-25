@@ -67,13 +67,46 @@
     }
 */
 
-.player-hand-card {
+.player_stats {
+    display: flex;
+    height: 35px;
+    align-items: center;
+}
+
+.player_stat {
+    margin-right: 10px;
+    display: flex;
+    align-items: center;
+}
+
+.health_icon {
+    width: 20px;
+    height: 20px;
     display: inline-block;
-    position: relative;
-    margin-top: 5px;
-    width: 200px;
-    height: 280px;
-    background-image: url('img/hogwarts_cards.png'); /* temp hack to see it */
+    margin-right: 2px;
+    background-image: url(img/sprites.png);
+    background-size: 160px;
+    background-position-x: 72%;
+}
+
+.attack_icon {
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+    margin-right: 2px;
+    background-image: url(img/sprites.png);
+    background-size: 160px;
+    background-position-x: 86%;
+}
+
+.influence_icon {
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+    margin-right: 2px;
+    background-image: url(img/sprites.png);
+    background-size: 160px;
+    background-position-x: 100%;
 }
 
 

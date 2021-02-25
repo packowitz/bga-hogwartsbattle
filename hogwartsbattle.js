@@ -53,11 +53,31 @@ function (dojo, declare) {
             console.log( "Starting game setup" );
             
             // Setting up player boards
+            this.health_counters = {};
+            this.attack_counters = {};
+            this.influence_counters = {};
             for( var player_id in gamedatas.players )
             {
                 var player = gamedatas.players[player_id];
                          
                 // TODO: Setting up players boards if needed
+                var player_board_div = $('player_board_' + player_id);
+                dojo.place( this.format_block('jstpl_player_board', player ), player_board_div );
+
+                // create counter per player
+                this.health_counters[player_id] = new ebg.counter();
+                this.health_counters[player_id].create('health_icon_p' + player_id);
+                this.health_counters[player_id].setValue(player.health);
+
+                this.attack_counters[player_id] = new ebg.counter();
+                this.attack_counters[player_id].create('attack_icon_p' + player_id);
+                this.attack_counters[player_id].setValue(player.attack);
+
+                this.influence_counters[player_id] = new ebg.counter();
+                this.influence_counters[player_id].create('influence_icon_p' + player_id);
+                this.influence_counters[player_id].setValue(player.influence);
+
+
             }
             
             // TODO: Set up your game interface here, according to "gamedatas"
