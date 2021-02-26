@@ -96,6 +96,7 @@ class HogwartsBattle extends Table
             shuffle($possibleHeroes);
             $color = array_shift( $default_colors );
             $values[] = "('".$player_id."','$color','".$player['player_canal']."','".addslashes( $player['player_name'] )."','".addslashes( $player['player_avatar'] )."','".array_pop($possibleHeroes)."')";
+
         }
         $sql .= implode( $values, ',' );
         self::DbQuery( $sql );
@@ -107,8 +108,6 @@ class HogwartsBattle extends Table
         $this->hogwartsCards->createCards($this->hogwartsCardsLibrary->game1Cards(), 'deck');
         $this->hogwartsCards->shuffle('deck');
         $this->hogwartsCards->pickCardsForLocation(6, 'deck', 'revealed');
-
-
 
         $playerHeroes = self::getCollectionFromDB("SELECT player_id id, player_hero heroId FROM player", true);
         foreach ($playerHeroes as $player_id => $heroId) {
@@ -150,13 +149,14 @@ class HogwartsBattle extends Table
         $result = array();
     
         $current_player_id = self::getCurrentPlayerId();    // !! We must only return informations visible by this player !!
-        $current_hero_id = self::getUniqueValueFromDB("SELECT player_hero FROM player where player_id = " . $current_player_id);
-    
+
         $result['players'] = self::getPlayerStats();
 
         // TODO: Gather all information about current game situation (visible by player $current_player_id).
 
-        $result['hand'] = $this->heroDecks[$current_hero_id]->getCardsInLocation('hand');
+        $result['hand'] = $this->getDeck($current_player_id)->getCardsInLocation('hand');
+
+        $result['played_cards'] = $this->getDeck(self::getActivePlayerId())->getCardsInLocation('played');
 
         $result['hogwarts_cards'] = $this->hogwartsCards->getCardsInLocation('revealed');
   
@@ -195,28 +195,27 @@ class HogwartsBattle extends Table
 
         foreach ($players as $player_id => $player) {
             // Add hero name
-            $heroName = "";
-            switch ($player['hero_id']) {
-                case HogwartsCards::$harryId:
-                    $heroName = "Harry";
-                    break;
-                case HogwartsCards::$ronId:
-                    $heroName = "Ron";
-                    break;
-                case HogwartsCards::$hermioneId:
-                    $heroName = "Hermione";
-                    break;
-                case HogwartsCards::$nevilleId:
-                    $heroName = "Neville";
-                    break;
-            }
+            $heroName = $this->getHeroName($player['hero_id']);
             $players[$player_id]['hero_name'] = clienttranslate($heroName);
 
             // Add hand cards
-            $players[$player_id]['hand_cards'] = self::getDeck($player_id)->countCardInLocation('hand');
+            $players[$player_id]['hand_cards'] = $this->getDeck($player_id)->countCardInLocation('hand');
         }
 
         return $players;
+    }
+
+    function getHeroName($heroId) {
+        switch ($heroId) {
+            case HogwartsCards::$harryId:
+                return "Harry";
+            case HogwartsCards::$ronId:
+                return "Ron";
+            case HogwartsCards::$hermioneId:
+                return "Hermione";
+            case HogwartsCards::$nevilleId:
+                return "Neville";
+        }
     }
 
     function getHeroId($playerId) {
@@ -224,7 +223,7 @@ class HogwartsBattle extends Table
     }
 
     function getDeck($playerId) {
-        return $this->heroDecks[self::getHeroId($playerId)];
+        return $this->heroDecks[$this->getHeroId($playerId)];
     }
 
 
@@ -269,63 +268,75 @@ class HogwartsBattle extends Table
         $this->gamestate->nextState('endTurn');
     }
 
-    function state_endTurn() {
+    function playCard($cardId) {
+        self::checkAction("playCard");
         $playerId = self::getActivePlayerId();
         $deck = self::getDeck($playerId);
+        $card = $deck->getCard($cardId);
+        $hogwartsCard = $this->hogwartsCardsLibrary->getCard($card['type'], $card['type_arg']);
+        if (is_null($card) || $card['location'] != 'hand') {
+            throw new feException( "Selected card is not in your hand" );
+        }
 
-        // Clean up board and draw 5 new cards
-        $deck->moveAllCardsInLocation('hand', 'discard');
-        $deck->moveAllCardsInLocation('played', 'discard');
-        $newHandCards = $deck->pickCards(5, 'deck', $playerId);
-        self::DbQuery("UPDATE player set player_attack = 0, player_influence = 0 where player_id = " . $playerId);
-
-        // Refill hogwarts cards
-        $missingCards = 6 - $this->hogwartsCards->countCardInLocation('revealed');
-        $newHogwartsCards = $this->hogwartsCards->pickCardsForLocation($missingCards, 'deck', 'revealed');
-
-        // Notify players
-        self::notifyAllPlayers(
-            'endTurn',
-            clienttranslate('${player_name} ends turn'),
-            array (
-                'i18n' => array ('color_displayed','value_displayed' ),
-                'players' => self::getPlayerStats(),
-                'new_hogwarts_cards' => $newHogwartsCards,
-                'player_id' => $playerId,
-                'player_name' => self::getActivePlayerName(),
-                'new_hand_cards' => $newHandCards
-            )
+        // Execute card
+        $executionComplete = true;
+        $notif_log = '${player_name} plays ${card_name}';
+        $notif_args = array(
+            'i18n' => array ('card_name'),
+            'player_name' => self::getActivePlayerName(),
+            'card_name' => $hogwartsCard->name,
+            'card_id' => $cardId,
+            'card_game_nr' => $hogwartsCard->gameNr,
+            'card_card_nr' => $hogwartsCard->cardNr,
         );
+        foreach ($hogwartsCard->onPlay as $action) {
+            switch ($action) {
+                case '+1inf':
+                    self::DbQuery("UPDATE player set player_influence = player_influence + 1 where player_id = " . $playerId);
+                    $notif_log .= ' and gains 1 influence token';
+                    break;
+                default:
+                    $notif_log .= ' Oh no, this card is not implemented yet. (' . $action . ')';
+                    break;
+            }
+        }
 
-        // Next Player
-        $this->activeNextPlayer();
-        self::giveExtraTime(self::getCurrentPlayerId());
-        $this->gamestate->nextState();
+        if ($executionComplete == true) {
+            $deck->moveCard($cardId, 'played');
+            $notif_args['players'] = self::getPlayerStats();
+            self::notifyAllPlayers(
+                'cardPlayed',
+                clienttranslate($notif_log),
+                $notif_args
+            );
+            $this->gamestate->nextState('playCard'); // is this necessary?
+        }
+
     }
 
     function acquireHogwartsCard($cardId) {
         self::checkAction("acquireHogwartsCard");
         $playerId = self::getActivePlayerId();
-        // TODO check player has enough influence
+        // TODO check player has enough influence and that the card is revealed
         // TODO pay costs
         $this->hogwartsCards->moveCard($cardId, 'dev0');
         // TODO has to go to discard
-        $deckCard = $this->hogwartsCards->getCard($cardId);
-        self::getDeck($playerId)->createCards($this->hogwartsCardsLibrary->asCardArray($deckCard['type'], $deckCard['type_arg']), 'hand', $playerId);
-        $card = $this->hogwartsCardsLibrary->getCard($deckCard['type'], $deckCard['type_arg']);
+        $card = $this->hogwartsCards->getCard($cardId);
+        self::getDeck($playerId)->createCards($this->hogwartsCardsLibrary->asCardArray($card['type'], $card['type_arg']), 'hand', $playerId);
+        $hogwartsCard = $this->hogwartsCardsLibrary->getCard($card['type'], $card['type_arg']);
         self::notifyAllPlayers(
             'acquireHogwartsCard',
             clienttranslate('${player_name} acquires ${card_name} for ${card_cost}'),
             array (
-                'i18n' => array ('color_displayed','value_displayed' ),
+                'i18n' => array ('card_name'),
                 'players' => self::getPlayerStats(),
                 'card_id' => $cardId,
-                'card_game_nr' => $card->gameNr,
-                'card_card_nr' => $card->cardNr,
+                'card_game_nr' => $hogwartsCard->gameNr,
+                'card_card_nr' => $hogwartsCard->cardNr,
                 'player_id' => $playerId,
                 'player_name' => self::getActivePlayerName(),
-                'card_name' => $card->name,
-                'card_cost' => $card->cost,
+                'card_name' => $hogwartsCard->name,
+                'card_cost' => $hogwartsCard->cost,
             )
         );
         $this->gamestate->nextState('acquireHogwartsCard');
@@ -366,23 +377,41 @@ class HogwartsBattle extends Table
         Here, you can create methods defined as "game state actions" (see "action" property in states.inc.php).
         The action method of state X is called everytime the current game state is set to X.
     */
-    
-    /*
-    
-    Example for game state "MyGameState":
 
-    function stMyGameState()
-    {
-        // Do some stuff ...
-        
-        // (very often) go to another gamestate
-        $this->gamestate->nextState( 'some_gamestate_transition' );
-    }    
-    */
+    function stEndTurn() {
+        $playerId = self::getActivePlayerId();
+        $deck = self::getDeck($playerId);
 
-//    function state_acquireHogwartsCard() {
-//        $this->gamestate->nextState("");
-//    }
+        // Clean up board and draw 5 new cards
+        $deck->moveAllCardsInLocation('hand', 'discard');
+        $deck->moveAllCardsInLocation('played', 'discard');
+        $newHandCards = $deck->pickCards(5, 'deck', $playerId);
+        self::DbQuery("UPDATE player set player_attack = 0, player_influence = 0 where player_id = " . $playerId);
+
+        // Refill hogwarts cards
+        $missingCards = 6 - $this->hogwartsCards->countCardInLocation('revealed');
+        $newHogwartsCards = $this->hogwartsCards->pickCardsForLocation($missingCards, 'deck', 'revealed');
+
+        // Notify players
+        // TODO send hand cards only to player
+        // TODO Reset all effects that are in place for this turn
+        self::notifyAllPlayers(
+            'endTurn',
+            clienttranslate('${player_name} ends the turn'),
+            array (
+                'players' => self::getPlayerStats(),
+                'new_hogwarts_cards' => $newHogwartsCards,
+                'player_id' => $playerId,
+                'player_name' => self::getActivePlayerName(),
+                'new_hand_cards' => $newHandCards
+            )
+        );
+
+        // Next Player
+        $this->activeNextPlayer();
+        self::giveExtraTime(self::getCurrentPlayerId());
+        $this->gamestate->nextState();
+    }
 
 //////////////////////////////////////////////////////////////////////////////
 //////////// Zombie

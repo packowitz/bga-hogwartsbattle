@@ -123,6 +123,11 @@ function (dojo, declare) {
                 }
             }
 
+            for (let i in gamedatas.played_cards) {
+                let card = gamedatas.played_cards[i];
+                this.playedCards.addToStockWithId(this.getHogwartsCardTypeId(card.type, card.type_arg), card.id);
+            }
+
             this.revealHogwartsCards(gamedatas.hogwarts_cards);
             this.drawHogwartsCards(gamedatas.hand);
 
@@ -316,9 +321,15 @@ function (dojo, declare) {
             var items = this.playerHand.getSelectedItems();
             if (items.length > 0) {
                 let card = items[0];
-
-                this.playedCards.addToStockWithId(card.type, card.id, 'myhand_item_' + card.id);
-                this.playerHand.removeFromStockById(card.id);
+                let action = 'playCard';
+                if (this.checkAction(action, true)) {
+                    this.ajaxcall("/" + this.game_name + "/" + this.game_name + "/" + action + ".html", {
+                        id : card.id,
+                        lock : true
+                    }, this, function(result) {}, function(is_error) {});
+                }
+                // this.playedCards.addToStockWithId(card.type, card.id, 'myhand_item_' + card.id);
+                // this.playerHand.removeFromStockById(card.id);
 
                 this.playerHand.unselectAll();
             }
@@ -387,6 +398,7 @@ function (dojo, declare) {
             // this.notifqueue.setSynchronous( 'cardPlayed', 3000 );
             //
             dojo.subscribe( 'endTurn', this, "notif_endTurn" );
+            dojo.subscribe( 'cardPlayed', this, "notif_cardPlayed" );
             dojo.subscribe( 'acquireHogwartsCard', this, "notif_acquireHogwartsCard" );
         },
         
@@ -407,7 +419,7 @@ function (dojo, declare) {
         
         */
 
-        notif_endTurn: function (notif) {
+        notif_endTurn: function(notif) {
             this.updatePlayerStats(notif.args.players);
             this.revealHogwartsCards(notif.args.new_hogwarts_cards);
             this.playedCards.removeAll();
@@ -415,6 +427,13 @@ function (dojo, declare) {
                 this.playerHand.removeAll();
                 this.drawHogwartsCards(notif.args.new_hand_cards);
             }
+        },
+
+        notif_cardPlayed: function(notif) {
+            this.updatePlayerStats(notif.args.players);
+            let typeId = this.getHogwartsCardTypeId(notif.args.card_game_nr, notif.args.card_card_nr);
+            this.playedCards.addToStockWithId(typeId, notif.args.card_id, 'myhand_item_' + notif.args.card_id);
+            this.playerHand.removeFromStockById(notif.args.card_id);
         },
 
         notif_acquireHogwartsCard: function(notif) {
@@ -426,5 +445,5 @@ function (dojo, declare) {
             // notif.args.card_id
             // notif.args.player_id
         },
-   });             
+   });
 });

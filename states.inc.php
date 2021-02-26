@@ -61,8 +61,6 @@ $machinestates = array(
         "transitions" => array("" => 20)
     ),
 
-    // Note: ID=2 => your first state
-
     20 => array(
         "name" => "playerTurn",
         "description" => clienttranslate('${actplayer} must play cards or end the turn'),
@@ -71,11 +69,26 @@ $machinestates = array(
         "possibleactions" => array("playCard", "acquireHogwartsCard", "endTurn"),
         "transitions" => array("playCard" => 20, "acquireHogwartsCard" => 20, "endTurn" => 66)
     ),
+    21 => array(
+        "name" => "playCard",
+        "description" => "",
+        "type" => "game",
+        "action" => "stPlayCard",
+        "transitions" => array("cardResolved" => 20, "chooseCardOption" => 22)
+    ),
+    22 => array(
+        "name" => "chooseCardOption",
+        "description" => clienttranslate('${actplayer} decide card options'),
+        "descriptionmyturn" => clienttranslate('${you} must decide card options'),
+        "type" => "activeplayer",
+        "possibleactions" => array("decide"),
+        "transitions" => array("" => 21)
+    ),
     66 => array(
         "name" => "endTurn",
         "description" => "",
         "type" => "game",
-        "action" => "state_endTurn",
+        "action" => "stEndTurn",
         "transitions" => array("" => 20)
     ),
 
