@@ -322,7 +322,11 @@ class HogwartsBattle extends Table
         $this->hogwartsCards->moveCard($cardId, 'dev0');
         // TODO has to go to discard
         $card = $this->hogwartsCards->getCard($cardId);
-        self::getDeck($playerId)->createCards($this->hogwartsCardsLibrary->asCardArray($card['type'], $card['type_arg']), 'hand', $playerId);
+
+        $deck = self::getDeck($playerId);
+        $deck->createCards($this->hogwartsCardsLibrary->asCardArray($card['type'], $card['type_arg']), 'new', $playerId);
+        $newCardId = key($deck->getCardsInLocation('new'));
+        $deck->moveCard($newCardId, 'hand');
         $hogwartsCard = $this->hogwartsCardsLibrary->getCard($card['type'], $card['type_arg']);
         self::notifyAllPlayers(
             'acquireHogwartsCard',
@@ -331,6 +335,7 @@ class HogwartsBattle extends Table
                 'i18n' => array ('card_name'),
                 'players' => self::getPlayerStats(),
                 'card_id' => $cardId,
+                'new_card_id' => $newCardId,
                 'card_game_nr' => $hogwartsCard->gameNr,
                 'card_card_nr' => $hogwartsCard->cardNr,
                 'player_id' => $playerId,

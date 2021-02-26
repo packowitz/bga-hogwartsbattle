@@ -432,6 +432,7 @@ function (dojo, declare) {
         notif_cardPlayed: function(notif) {
             this.updatePlayerStats(notif.args.players);
             let typeId = this.getHogwartsCardTypeId(notif.args.card_game_nr, notif.args.card_card_nr);
+            // TODO check for current player
             this.playedCards.addToStockWithId(typeId, notif.args.card_id, 'myhand_item_' + notif.args.card_id);
             this.playerHand.removeFromStockById(notif.args.card_id);
         },
@@ -439,7 +440,7 @@ function (dojo, declare) {
         notif_acquireHogwartsCard: function(notif) {
             this.updatePlayerStats(notif.args.players);
             let typeId = this.getHogwartsCardTypeId(notif.args.card_game_nr, notif.args.card_card_nr);
-            this.playerHand.addToStockWithId(typeId, notif.args.card_id, 'hogwarts_cards_item_' + notif.args.card_id);
+            this.playerHand.addToStockWithId(typeId, notif.args.new_card_id, 'hogwarts_cards_item_' + notif.args.card_id);
             this.hogwartsCards.removeFromStockById(notif.args.card_id);
             // move acquired card to player
             // notif.args.card_id
