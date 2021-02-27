@@ -51,7 +51,7 @@
 <!-- BEGIN player -->
 <div class="whiteblock">
     <h3 style="color:#{PLAYER_COLOR}">{PLAYER_NAME}</h3>
-    <div id="player_discard_{PLAYER_ID}">
+    <div id="player_discard_{PLAYER_ID}" class="discard_pile">
     </div>
 </div>
 <!-- END player -->
@@ -74,6 +74,8 @@
   <div class="player_stat"><div class="influence_icon"></div><span id="influence_stat_p${id}">0</span></div>\
   <div class="player_stat"><div class="hand_cards_icon"></div><span id="hand_cards_stat_p${id}">0</span></div>\
 </div>';
+
+  var jstpl_howarts_card = '<div class="hogwarts_card" id="${element_id}" style="background-position: ${posX}% ${posY}%;"></div>';
 
 </script>
 

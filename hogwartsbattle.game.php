@@ -198,8 +198,9 @@ class HogwartsBattle extends Table
             $heroName = $this->getHeroName($player['hero_id']);
             $players[$player_id]['hero_name'] = clienttranslate($heroName);
 
-            // Add hand cards
+            // Add cards
             $players[$player_id]['hand_cards'] = $this->getDeck($player_id)->countCardInLocation('hand');
+            $players[$player_id]['discard_cards'] = $this->getDeck($player_id)->getCardsInLocation('discard');
         }
 
         return $players;

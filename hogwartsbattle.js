@@ -35,6 +35,8 @@ function (dojo, declare) {
             this.influence_counters = {};
             this.handCards_counters = {};
 
+            this.discard_piles = {};
+
             // this.handCardsZone = new ebg.zone();
             // this.handCardsZone.create(this, 'myhand', 100, 140);
             // this.handCardsZone.setPattern('horizontalfit');
@@ -66,7 +68,6 @@ function (dojo, declare) {
             {
                 var player = gamedatas.players[player_id];
                          
-                // TODO: Setting up players boards if needed
                 var player_board_div = $('player_board_' + player_id);
                 dojo.place( this.format_block('jstpl_player_board', player ), player_board_div );
 
@@ -86,6 +87,27 @@ function (dojo, declare) {
                 this.handCards_counters[player_id] = new ebg.counter();
                 this.handCards_counters[player_id].create('hand_cards_stat_p' + player_id);
                 this.handCards_counters[player_id].setValue(player.hand_cards);
+
+                // discard pile
+                this.discard_piles[player_id] = new ebg.zone();
+                this.discard_piles[player_id].create(this, 'player_discard_' + player_id, 100, 140);
+                this.discard_piles[player_id].setPattern('horizontalfit');
+                this.discard_piles[player_id].item_margin = 4;
+
+                for (let card_discarded_id in player.discard_cards) {
+                    let card_discarded = player.discard_cards[card_discarded_id];
+                    console.log('discarded card:');
+                    console.log(card_discarded);
+
+                    let elementId = 'discard_p' + player_id + '_' + card_discarded.id
+                    dojo.place(
+                      this.format_block( 'jstpl_howarts_card', {
+                          element_id: elementId,
+                          posX: -100 * parseInt(card_discarded.type_arg),
+                          posY: 100 * parseInt(card_discarded.type),
+                      }), 'player_discard_' + player_id );
+                    this.discard_piles[player_id].placeInZone(elementId);
+                }
             }
             
             // TODO: Set up your game interface here, according to "gamedatas"

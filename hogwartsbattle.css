@@ -144,6 +144,17 @@
     width: 100px;
 }
 
+.hogwarts_card {
+    width: 100px;
+    height: 140px;
+    background-image: url('img/hogwarts_cards.png');
+    background-size: 1600px;
+}
+
+.discard_pile {
+    height: 140px;
+}
+
 
 
 
