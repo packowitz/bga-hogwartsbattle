@@ -199,11 +199,44 @@ class HogwartsBattle extends Table
             $players[$player_id]['hero_name'] = clienttranslate($heroName);
 
             // Add cards
-            $players[$player_id]['hand_cards'] = $this->getDeck($player_id)->countCardInLocation('hand');
+            $players[$player_id]['hand_card_count'] = $this->getDeck($player_id)->countCardInLocation('hand');
             $players[$player_id]['discard_cards'] = $this->getDeck($player_id)->getCardsInLocation('discard');
         }
 
         return $players;
+    }
+
+    function getPlayerUpdate() {
+        $players = self::loadPlayersBasicInfos();
+        $update = array();
+        foreach ( $players as $player_id => $info ) {
+            $update[$player_id] = array(
+                'healthDiff' => 0,
+                'attackDiff' => 0,
+                'influenceDiff' => 0,
+                'handCardsDiff' => 0,
+                'newCardsInDiscard' => array(),
+                'deck_shuffled' => false
+            );
+        }
+        return $update;
+    }
+
+    function getAcquirableHogwartsCards($playerId) {
+        $influence = $this->getPlayerInfluence($playerId);
+        $cardIds = array();
+        $revealedCards = $this->hogwartsCards->getCardsInLocation('revealed');
+        foreach ($revealedCards as $cardId => $card) {
+            $hogwartsCard = $this->hogwartsCardsLibrary->getCard($card['type'], $card['type_arg']);
+            if ($influence >= $hogwartsCard->cost) {
+                $cardIds[] = $cardId;
+            }
+        }
+        return $cardIds;
+    }
+
+    function getPlayerInfluence($playerId) {
+        return self::getUniqueValueFromDB('select player_influence from player where player_id = ' . $playerId);
     }
 
     function getHeroName($heroId) {
@@ -336,23 +369,32 @@ class HogwartsBattle extends Table
     function acquireHogwartsCard($cardId) {
         self::checkAction("acquireHogwartsCard");
         $playerId = self::getActivePlayerId();
-        // TODO check player has enough influence and that the card is revealed
-        // TODO pay costs
-        $this->hogwartsCards->moveCard($cardId, 'dev0');
-        // TODO has to go to discard
+        $playerUpdates = $this->getPlayerUpdate();
         $card = $this->hogwartsCards->getCard($cardId);
-
-        $deck = self::getDeck($playerId);
-        $deck->createCards($this->hogwartsCardsLibrary->asCardArray($card['type'], $card['type_arg']), 'new', $playerId);
-        $newCardId = key($deck->getCardsInLocation('new'));
-        $deck->moveCard($newCardId, 'hand');
         $hogwartsCard = $this->hogwartsCardsLibrary->getCard($card['type'], $card['type_arg']);
+
+        // Check the costs and pay the price
+        if ($this->getPlayerInfluence($playerId) < $hogwartsCard->cost) {
+            throw new feException('You don\'t have enough influence to acquire that hogwarts card');
+        }
+        self::DbQuery("UPDATE player set player_influence = player_influence - " . $hogwartsCard->cost . " where player_id = " . $playerId);
+        $playerUpdates[$playerId]['influenceDiff'] = -$hogwartsCard->cost;
+
+        // Add acquired card to discard pile
+        $this->hogwartsCards->moveCard($cardId, 'dev0');
+        // TODO check effects on acquire_hogwarts_card
+        $deck = self::getDeck($playerId);
+        $deck->createCards(array($this->hogwartsCardsLibrary->asCard($hogwartsCard)), 'new', $playerId);
+        $newCardId = key($deck->getCardsInLocation('new'));
+        $deck->moveCard($newCardId, 'discard');
+
         self::notifyAllPlayers(
             'acquireHogwartsCard',
             clienttranslate('${player_name} acquires ${card_name} for ${card_cost}'),
             array (
                 'i18n' => array ('card_name'),
-                'players' => self::getPlayerStats(),
+                'player_updates' => $playerUpdates,
+                'acquirable_hogwarts_cards' => $this->getAcquirableHogwartsCards($playerId),
                 'card_id' => $cardId,
                 'new_card_id' => $newCardId,
                 'card_game_nr' => $hogwartsCard->gameNr,
@@ -363,6 +405,7 @@ class HogwartsBattle extends Table
                 'card_cost' => $hogwartsCard->cost,
             )
         );
+        // TODO notify active player about hogwarts card he can acquire
         $this->gamestate->nextState('acquireHogwartsCard');
     }
     

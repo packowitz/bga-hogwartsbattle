@@ -113,21 +113,15 @@ class HogwartsCards {
         return $cards;
     }
 
-    public function asCardArray($gameNr, $cardNr) {
-        $cards = array();
-        $cards[] = $this->asCard($this->hogwartsCards[$this->cardId($gameNr, $cardNr)]);
-        return $cards;
-    }
-
     public function getCard($gameNr, $cardNr) {
         return $this->hogwartsCards[$this->cardId($gameNr, $cardNr)];
     }
 
-    private function cardId($gameNr, $cardNr) {
+    public function cardId($gameNr, $cardNr) {
         return (int)$gameNr * 100 + (int)$cardNr;
     }
 
-    private function asCard($card, $x = 1) {
+    public function asCard($card, $x = 1) {
         return array ('type' => $card->gameNr,'type_arg' => $card->cardNr,'nbr' => $x );
     }
 

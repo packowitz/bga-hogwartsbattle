@@ -86,7 +86,7 @@ function (dojo, declare) {
 
                 this.handCards_counters[player_id] = new ebg.counter();
                 this.handCards_counters[player_id].create('hand_cards_stat_p' + player_id);
-                this.handCards_counters[player_id].setValue(player.hand_cards);
+                this.handCards_counters[player_id].setValue(player.hand_card_count);
 
                 // discard pile
                 this.discard_piles[player_id] = new ebg.zone();
@@ -96,8 +96,6 @@ function (dojo, declare) {
 
                 for (let card_discarded_id in player.discard_cards) {
                     let card_discarded = player.discard_cards[card_discarded_id];
-                    console.log('discarded card:');
-                    console.log(card_discarded);
 
                     let elementId = 'discard_p' + player_id + '_' + card_discarded.id
                     dojo.place(
@@ -257,18 +255,15 @@ function (dojo, declare) {
             if (players) {
                 for(let playerId in players) {
                     let player = players[playerId];
-
-                    let healthDiff = player.health - this.health_counters[playerId].getValue();
-                    this.health_counters[playerId].incValue(healthDiff);
-
-                    let attackDiff = player.attack - this.attack_counters[playerId].getValue();
-                    this.attack_counters[playerId].incValue(attackDiff);
-
-                    let influenceDiff = player.influence - this.influence_counters[playerId].getValue();
-                    this.influence_counters[playerId].incValue(influenceDiff);
-
-                    let handCardsDiff = player.hand_cards - this.handCards_counters[playerId].getValue();
-                    this.handCards_counters[playerId].incValue(handCardsDiff);
+                    this.health_counters[playerId].incValue(player.healthDiff);
+                    this.attack_counters[playerId].incValue(player.attackDiff);
+                    this.influence_counters[playerId].incValue(player.influenceDiff);
+                    this.handCards_counters[playerId].incValue(player.handCardsDiff);
+                    for (let discardedCardIdx in player.newCardsInDiscard) {
+                        let discardedCard = player.newCardsInDiscard[discardedCardIdx];
+                        console.log('new card in discard pile');
+                        console.log(discardedCard);
+                    }
                 }
             }
         },
@@ -444,7 +439,7 @@ function (dojo, declare) {
         */
 
         notif_endTurn: function(notif) {
-            this.updatePlayerStats(notif.args.players);
+            this.updatePlayerStats(notif.args.player_updates);
             this.revealHogwartsCards(notif.args.new_hogwarts_cards);
             this.playedCards.removeAll();
             if (this.player_id == notif.args.player_id) {
@@ -454,7 +449,7 @@ function (dojo, declare) {
         },
 
         notif_cardPlayed: function(notif) {
-            this.updatePlayerStats(notif.args.players);
+            this.updatePlayerStats(notif.args.player_updates);
             let typeId = this.getHogwartsCardTypeId(notif.args.card_game_nr, notif.args.card_card_nr);
             if (this.player_id == notif.args.player_id) {
                 this.playedCards.addToStockWithId(typeId, notif.args.card_id, 'myhand_item_' + notif.args.card_id);
@@ -463,7 +458,7 @@ function (dojo, declare) {
         },
 
         notif_acquireHogwartsCard: function(notif) {
-            this.updatePlayerStats(notif.args.players);
+            this.updatePlayerStats(notif.args.player_updates);
             let typeId = this.getHogwartsCardTypeId(notif.args.card_game_nr, notif.args.card_card_nr);
             this.playerHand.addToStockWithId(typeId, notif.args.new_card_id, 'hogwarts_cards_item_' + notif.args.card_id);
             this.hogwartsCards.removeFromStockById(notif.args.card_id);
