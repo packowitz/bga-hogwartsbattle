@@ -38,9 +38,21 @@
         $players_nbr = count( $players );
 
         /*********** Place your code below:  ************/
+        $template = self::getGameName() . "_" . self::getGameName();
 
+        // one discard block for each player
+        $this->page->begin_block($template, "player");
+        foreach ( $players as $player_id => $info ) {
+            $this->page->insert_block("player", array (
+                "PLAYER_ID" => $player_id,
+                "PLAYER_NAME" => $players [$player_id] ['player_name'] . self::_("'s discard pile'"),
+                "PLAYER_COLOR" => $players [$player_id] ['player_color']
+            ));
+        }
+
+        // this will make our My Hand text translatable
         $this->tpl['HOGWARTS_CARDS'] = self::_("Hogwarts cards");
-        $this->tpl['PLAYED_CARDS'] = self::_("Played cards");
+        $this->tpl['BOARD'] = self::_("Played cards");
         $this->tpl['MY_HAND'] = self::_("My hand");
 
         /*

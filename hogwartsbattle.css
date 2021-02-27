@@ -119,6 +119,31 @@
     background-position-x: 80%;
 }
 
+.player_board {
+    display: flex;
+}
+
+.full-width {
+    width: 100%;
+}
+
+.player_board .player_board_part {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.hogwarts-deck {
+    width: 100px;
+    height: 140px;
+    background-image: url('img/hogwarts_back.png');
+    background-size: 100%;
+}
+
+.played_cards {
+    width: 100px;
+}
+
 
 
 

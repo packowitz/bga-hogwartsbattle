@@ -226,6 +226,22 @@ class HogwartsBattle extends Table
         return $this->heroDecks[$this->getHeroId($playerId)];
     }
 
+    function getLogsGainHealthIcon() {
+        return '<div class="health_icon"></div>';
+    }
+
+    function getLogsGainInfluenceIcon() {
+        return '<div class="influence_icon">';
+    }
+
+    function getLogsGainAttackIcon() {
+        return '<div class="attack_icon"></div>';
+    }
+
+    function getLogsDrawCardIcon() {
+        return '<div class="hand_cards_icon"></div>';
+    }
+
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -284,6 +300,7 @@ class HogwartsBattle extends Table
         $notif_args = array(
             'i18n' => array ('card_name'),
             'player_name' => self::getActivePlayerName(),
+            'player_id' => $playerId,
             'card_name' => $hogwartsCard->name,
             'card_id' => $cardId,
             'card_game_nr' => $hogwartsCard->gameNr,
@@ -293,7 +310,8 @@ class HogwartsBattle extends Table
             switch ($action) {
                 case '+1inf':
                     self::DbQuery("UPDATE player set player_influence = player_influence + 1 where player_id = " . $playerId);
-                    $notif_log .= ' and gains 1 influence token';
+                    $notif_log .= ': +1 ${influence_token}';
+                    $notif_args['influence_token'] = $this->getLogsGainInfluenceIcon();
                     break;
                 default:
                     $notif_log .= ' Oh no, this card is not implemented yet. (' . $action . ')';

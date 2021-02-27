@@ -26,36 +26,48 @@
 -->
 
 
+<div class="whiteblock">
+    <div class="player_board">
+        <div class="player_board_part" style="flex-grow: 1;">
+            <h3>{MY_HAND}</h3>
+            <div class="full-width" id="myhand"></div>
+        </div>
+    </div>
+
+</div>
+
+<div class="whiteblock">
+    <h3>{BOARD}</h3>
+    <div id="played_cards">
+    </div>
+</div>
+
 <div id="hogwarts_cards_wrap" class="whiteblock">
     <h3>{HOGWARTS_CARDS}</h3>
     <div id="hogwarts_cards">
     </div>
 </div>
 
-<div id="played_cards_wrap" class="whiteblock">
-    <h3>{PLAYED_CARDS}</h3>
-    <div id="played_cards">
+<!-- BEGIN player -->
+<div class="whiteblock">
+    <h3 style="color:#{PLAYER_COLOR}">{PLAYER_NAME}</h3>
+    <div id="player_discard_{PLAYER_ID}">
     </div>
 </div>
-
-<div id="myhand_wrap" class="whiteblock">
-    <h3>{MY_HAND}</h3>
-    <div id="myhand">
-    </div>
-</div>
+<!-- END player -->
 
 
 <script type="text/javascript">
 
-// Javascript HTML templates
+  // Javascript HTML templates
 
-/*
-// Example:
-var jstpl_some_game_item='<div class="my_game_item" id="my_game_item_${MY_ITEM_ID}"></div>';
+  /*
+  // Example:
+  var jstpl_some_game_item='<div class="my_game_item" id="my_game_item_${MY_ITEM_ID}"></div>';
 
 */
 
-var jstpl_player_board = '<div class="player_stats">\
+  var jstpl_player_board = '<div class="player_stats">\
   <div class="player_stat">${hero_name}</div>\
   <div class="player_stat"><div class="health_icon"></div><span id="health_stat_p${id}">0</span></div>\
   <div class="player_stat"><div class="attack_icon"></div><span id="attack_stat_p${id}">0</span></div>\
@@ -63,6 +75,6 @@ var jstpl_player_board = '<div class="player_stats">\
   <div class="player_stat"><div class="hand_cards_icon"></div><span id="hand_cards_stat_p${id}">0</span></div>\
 </div>';
 
-</script>  
+</script>
 
 {OVERALL_GAME_FOOTER}

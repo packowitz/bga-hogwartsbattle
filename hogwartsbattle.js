@@ -19,7 +19,8 @@ define([
       "dojo", "dojo/_base/declare",
       "ebg/core/gamegui",
       "ebg/counter",
-      "ebg/stock"
+      "ebg/stock",
+      "ebg/zone"
   ],
 function (dojo, declare) {
     return declare("bgagame.hogwartsbattle", ebg.core.gamegui, {
@@ -33,6 +34,14 @@ function (dojo, declare) {
             this.attack_counters = {};
             this.influence_counters = {};
             this.handCards_counters = {};
+
+            // this.handCardsZone = new ebg.zone();
+            // this.handCardsZone.create(this, 'myhand', 100, 140);
+            // this.handCardsZone.setPattern('horizontalfit');
+            //
+            // this.discardZone = new ebg.zone();
+            // this.discardZone.create(this, 'played_cards', 100, 140);
+            // this.discardZone.setPattern('verticalfit');
         },
         
         /*
@@ -83,34 +92,27 @@ function (dojo, declare) {
 
             var customStyle = document.createElement('style');
             customStyle.type = 'text/css';
-            customStyle.innerHTML = `
-                .card_size_50p { background-size: ${this.cardsPerRow * this.cardwidth * 0.5}px; }               
-                .card_size_50p:hover {
-                    background-size: initial;
-                    height: ${this.cardheight}px !important;
-                    width: ${this.cardwidth}px !important;
-                    position: relative;
-                    top: -${this.cardheight * 0.25}px !important;
-                    z-index: 1;
-                }`;
+            customStyle.innerHTML = `.card_size_50p { background-size: ${this.cardsPerRow * this.cardwidth * 0.5}px; }`;
             document.getElementsByTagName('head')[0].appendChild(customStyle);
 
             // Hogwarts cards
-            this.hogwartsCards = new ebg.stock(); // new stock object for hand
-            this.hogwartsCards.create( this, $('hogwarts_cards'), this.cardwidth, this.cardheight );
+            this.hogwartsCards = new ebg.stock();
+            this.hogwartsCards.create(this, $('hogwarts_cards'), this.cardwidth * 0.5, this.cardheight * 0.5);
             this.hogwartsCards.image_items_per_row = this.cardsPerRow;
+            this.hogwartsCards.extraClasses='card_size_50p';
 
             // Played cards
-            this.playedCards = new ebg.stock(); // new stock object for hand
-            this.playedCards.create( this, $('played_cards'), this.cardwidth * 0.5, this.cardheight * 0.5 );
+            this.playedCards = new ebg.stock();
+            this.playedCards.create(this, $('played_cards'), this.cardwidth * 0.5, this.cardheight * 0.5);
             this.playedCards.image_items_per_row = this.cardsPerRow;
             this.playedCards.setSelectionMode(0);
             this.playedCards.extraClasses='card_size_50p';
 
             // Player hand
-            this.playerHand = new ebg.stock(); // new stock object for hand
-            this.playerHand.create( this, $('myhand'), this.cardwidth, this.cardheight );
+            this.playerHand = new ebg.stock();
+            this.playerHand.create(this, $('myhand'), this.cardwidth * 0.5, this.cardheight * 0.5);
             this.playerHand.image_items_per_row = this.cardsPerRow;
+            this.playerHand.extraClasses='card_size_50p';
 
             // Create cards types:
             for (var gameNr = 0; gameNr <= 1; gameNr++) {
@@ -432,9 +434,10 @@ function (dojo, declare) {
         notif_cardPlayed: function(notif) {
             this.updatePlayerStats(notif.args.players);
             let typeId = this.getHogwartsCardTypeId(notif.args.card_game_nr, notif.args.card_card_nr);
-            // TODO check for current player
-            this.playedCards.addToStockWithId(typeId, notif.args.card_id, 'myhand_item_' + notif.args.card_id);
-            this.playerHand.removeFromStockById(notif.args.card_id);
+            if (this.player_id == notif.args.player_id) {
+                this.playedCards.addToStockWithId(typeId, notif.args.card_id, 'myhand_item_' + notif.args.card_id);
+                this.playerHand.removeFromStockById(notif.args.card_id);
+            }
         },
 
         notif_acquireHogwartsCard: function(notif) {
