@@ -36,17 +36,23 @@
 
 </div>
 
-<div class="whiteblock">
-    <h3>{BOARD}</h3>
-    <div id="played_cards">
+<div class="game_board">
+    <div class="flex-grow">
+        <div class="whiteblock">
+            <h3>{BOARD}</h3>
+            <div id="played_cards">
+            </div>
+        </div>
+    </div>
+
+    <div class="whiteblock revealed_hogwarts_cards">
+        <h3>{HOGWARTS_CARDS}</h3>
+        <div id="hogwarts_cards">
+        </div>
     </div>
 </div>
 
-<div id="hogwarts_cards_wrap" class="whiteblock">
-    <h3>{HOGWARTS_CARDS}</h3>
-    <div id="hogwarts_cards">
-    </div>
-</div>
+
 
 <!-- BEGIN player -->
 <div class="whiteblock">
@@ -75,7 +81,7 @@
   <div class="player_stat"><div class="hand_cards_icon"></div><span id="hand_cards_stat_p${id}">0</span></div>\
 </div>';
 
-  var jstpl_howarts_card = '<div class="hogwarts_card" id="${element_id}" style="background-position: ${posX}% ${posY}%;"></div>';
+  var jstpl_howarts_card = '<div class="hogwarts_card" id="${elementId}" data-card-id="${cardId}" style="background-position: ${posX}% ${posY}%;"></div>';
 
 </script>
 

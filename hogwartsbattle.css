@@ -87,6 +87,7 @@
     background-image: url(img/sprites.png);
     background-size: 220px;
     background-position-x: 50%;
+    vertical-align: bottom;
 }
 
 .attack_icon {
@@ -97,6 +98,7 @@
     background-image: url(img/sprites.png);
     background-size: 220px;
     background-position-x: 60%;
+    vertical-align: bottom;
 }
 
 .influence_icon {
@@ -107,6 +109,7 @@
     background-image: url(img/sprites.png);
     background-size: 220px;
     background-position-x: 70%;
+    vertical-align: bottom;
 }
 
 .hand_cards_icon {
@@ -117,6 +120,7 @@
     background-image: url(img/sprites.png);
     background-size: 220px;
     background-position-x: 80%;
+    vertical-align: bottom;
 }
 
 .player_board {
@@ -149,12 +153,41 @@
     height: 140px;
     background-image: url('img/hogwarts_cards.png');
     background-size: 1600px;
+    filter: drop-shadow(2px 2px 2px #444);
 }
 
 .discard_pile {
     height: 140px;
 }
 
+.game_board {
+    display: flex;
+}
 
+.flex-grow {
+    flex-grow: 1;
+}
+
+.revealed_hogwarts_cards {
+    margin-left: 20px;
+    width: 220px;
+    height: 460px;
+}
+
+.can_acquire {
+    border-radius: 5px;
+    animation: pulse 1s infinite alternate;
+    cursor: pointer;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 2px #84ea82;
+    }
+
+    100% {
+        box-shadow: 0 0 2px 2px #2ebf5b;
+    }
+}
 
 

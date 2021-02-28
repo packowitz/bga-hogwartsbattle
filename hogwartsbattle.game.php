@@ -149,6 +149,7 @@ class HogwartsBattle extends Table
         $result = array();
     
         $current_player_id = self::getCurrentPlayerId();    // !! We must only return informations visible by this player !!
+        $isActivePlayer = $current_player_id == self::getActivePlayerId();
 
         $result['players'] = self::getPlayerStats();
 
@@ -159,7 +160,11 @@ class HogwartsBattle extends Table
         $result['played_cards'] = $this->getDeck(self::getActivePlayerId())->getCardsInLocation('played');
 
         $result['hogwarts_cards'] = $this->hogwartsCards->getCardsInLocation('revealed');
-  
+
+        if ($isActivePlayer == true) {
+            $result['acquirable_hogwarts_cards'] = $this->getAcquirableHogwartsCards($current_player_id);
+        }
+
         return $result;
     }
 
