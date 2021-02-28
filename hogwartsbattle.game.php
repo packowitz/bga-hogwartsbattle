@@ -326,6 +326,7 @@ class HogwartsBattle extends Table
     function playCard($cardId) {
         self::checkAction("playCard");
         $playerId = self::getActivePlayerId();
+        $playerUpdates = $this->getPlayerUpdate();
         $deck = self::getDeck($playerId);
         $card = $deck->getCard($cardId);
         $hogwartsCard = $this->hogwartsCardsLibrary->getCard($card['type'], $card['type_arg']);
@@ -349,6 +350,7 @@ class HogwartsBattle extends Table
             switch ($action) {
                 case '+1inf':
                     self::DbQuery("UPDATE player set player_influence = player_influence + 1 where player_id = " . $playerId);
+                    $playerUpdates[$playerId]['influenceDiff'] += 1;
                     $notif_log .= ': +1 ${influence_token}';
                     $notif_args['influence_token'] = $this->getLogsGainInfluenceIcon();
                     break;
@@ -360,7 +362,9 @@ class HogwartsBattle extends Table
 
         if ($executionComplete == true) {
             $deck->moveCard($cardId, 'played');
-            $notif_args['players'] = self::getPlayerStats();
+            $playerUpdates[$playerId]['handCardsDiff'] -= 1;
+            $notif_args['player_updates'] = $playerUpdates;
+            $notif_args['acquirable_hogwarts_cards'] = $this->getAcquirableHogwartsCards($playerId);
             self::notifyAllPlayers(
                 'cardPlayed',
                 clienttranslate($notif_log),
@@ -383,7 +387,7 @@ class HogwartsBattle extends Table
             throw new feException('You don\'t have enough influence to acquire that hogwarts card');
         }
         self::DbQuery("UPDATE player set player_influence = player_influence - " . $hogwartsCard->cost . " where player_id = " . $playerId);
-        $playerUpdates[$playerId]['influenceDiff'] = -$hogwartsCard->cost;
+        $playerUpdates[$playerId]['influenceDiff'] -= $hogwartsCard->cost;
 
         // Add acquired card to discard pile
         $this->hogwartsCards->moveCard($cardId, 'dev0');

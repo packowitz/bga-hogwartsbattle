@@ -255,11 +255,32 @@ function (dojo, declare) {
                     this.attack_counters[playerId].incValue(player.attackDiff);
                     this.influence_counters[playerId].incValue(player.influenceDiff);
                     this.handCards_counters[playerId].incValue(player.handCardsDiff);
+
                     for (let discardedCardIdx in player.newCardsInDiscard) {
                         let discardedCard = player.newCardsInDiscard[discardedCardIdx];
                         console.log('new card in discard pile');
                         console.log(discardedCard);
                     }
+                }
+            }
+        },
+
+        updatePlayerAbsolutStats(players) {
+            if (players) {
+                for (let playerId in players) {
+                    let player = players[playerId];
+
+                    let healthDiff = player.health - this.health_counters[playerId].getValue();
+                    this.health_counters[playerId].incValue(healthDiff);
+
+                    let attackDiff = player.attack - this.attack_counters[playerId].getValue();
+                    this.attack_counters[playerId].incValue(attackDiff);
+
+                    let influenceDiff = player.influence - this.influence_counters[playerId].getValue();
+                    this.influence_counters[playerId].incValue(influenceDiff);
+
+                    let handCardsDiff = player.hand_cards - this.handCards_counters[playerId].getValue();
+                    this.handCards_counters[playerId].incValue(handCardsDiff);
                 }
             }
         },
@@ -285,17 +306,8 @@ function (dojo, declare) {
             }
         },
 
-        removeCanAcquireEvents: function() {
-            this.disconnectClass('can_acquire', 'onclick');
-        },
-
-        addCanAcquireEvents: function() {
-            this.addEventToClass('can_acquire', 'onclick', 'onAcquireHogwartsCard');
-        },
-
         checkAcquirableHogwartsCards: function(acquirableCardIds) {
             if (acquirableCardIds) {
-                this.removeCanAcquireEvents();
                 for (let cardIdx in this.hogwartsCards.getAllItems()) {
                     let card = this.hogwartsCards.items[cardIdx];
                     let cardNode = dojo.byId(card.id);
@@ -303,14 +315,15 @@ function (dojo, declare) {
                     if (dojo.hasClass(cardNode, 'can_acquire')) {
                         if (!acquirableCardIds.includes(cardId)) {
                             dojo.removeClass(cardNode, 'can_acquire');
+                            this.disconnect( $(card.id), 'onclick');
                         }
                     } else {
                         if (acquirableCardIds.includes(cardId)) {
                             dojo.addClass(cardNode, 'can_acquire');
+                            this.connect( $(card.id), 'onclick', 'onAcquireHogwartsCard');
                         }
                     }
                 }
-                this.addCanAcquireEvents();
             }
         },
 
@@ -321,28 +334,6 @@ function (dojo, declare) {
                     this.playerHand.addToStockWithId(this.getHogwartsCardTypeId(card.type, card.type_arg), card.id);
                 }
             }
-        },
-
-        // Event Handling removes work done by addEventToClass
-        disconnectClass: function(className, eventName) {
-            let new_connections = [];
-            let elemsWithClass = dojo.query("." + className);
-            for (let i = 0; i < this.connections.length; i++) {
-                let conn = this.connections[i];
-                let foundIt = false
-                for (var j = 0; j < elemsWithClass.length; j++) {
-                    var elemWithClass = elemsWithClass[j];
-                    if (conn.element == elemWithClass && conn.event == eventName) {
-                        // Found element with event in connection list disconnect event
-                        dojo.disconnect(conn.handle);
-                        foundIt = true;
-                    }
-                }
-                if (!foundIt) {
-                    new_connections.push(conn);
-                }
-            }
-            this.connections = new_connections;
         },
 
 
@@ -364,11 +355,7 @@ function (dojo, declare) {
             dojo.stopEvent(evt);
 
             // clean up hogwarts cards
-            this.removeCanAcquireEvents();
-            for (let cardIdx in this.hogwartsCards.getAllItems()) {
-                let card = this.hogwartsCards.items[cardIdx];
-                dojo.removeClass(dojo.byId(card.id), 'can_acquire');
-            }
+            this.checkAcquirableHogwartsCards([]);
 
             let action = 'endTurn';
             if (this.checkAction(action, true)) {
@@ -514,7 +501,7 @@ function (dojo, declare) {
         */
 
         notif_endTurn: function(notif) {
-            this.updatePlayerStats(notif.args.player_updates);
+            this.updatePlayerAbsolutStats(notif.args.players);
             this.checkAcquirableHogwartsCards(notif.args.acquirable_hogwarts_cards);
             this.revealHogwartsCards(notif.args.new_hogwarts_cards);
             this.playedCards.removeAll();
@@ -540,12 +527,10 @@ function (dojo, declare) {
 
             let cardElemId = 'hogwarts_card_' + notif.args.card_id;
 
-            // clean up css
+            // clean up can_acquire
             if (this.isCurrentPlayerActive()) {
-                let cardNode = dojo.byId(cardElemId);
-                this.removeCanAcquireEvents();
-                dojo.removeClass(cardNode, 'can_acquire');
-                this.addCanAcquireEvents();
+                this.disconnect( $(cardElemId), 'onclick');
+                dojo.removeClass(dojo.byId(cardElemId), 'can_acquire');
             }
 
             this.hogwartsCards.removeFromZone(cardElemId);
