@@ -40,13 +40,14 @@
     <div class="flex-grow">
         <div class="whiteblock">
             <h3>{BOARD}</h3>
-            <div id="played_cards">
+            <div id="played_cards" class="played_cards">
             </div>
         </div>
     </div>
 
     <div class="whiteblock revealed_hogwarts_cards">
         <h3>{HOGWARTS_CARDS}</h3>
+        <div id="acquired_hogwarts_card" class="acquired_hogwarts_card"></div>
         <div id="hogwarts_cards">
         </div>
     </div>
@@ -81,7 +82,7 @@
   <div class="player_stat"><div class="hand_cards_icon"></div><span id="hand_cards_stat_p${id}">0</span></div>\
 </div>';
 
-  var jstpl_howarts_card = '<div class="hogwarts_card" id="${elementId}" data-card-id="${cardId}" style="background-position: ${posX}% ${posY}%;"></div>';
+  var jstpl_hogwarts_card = '<div class="hogwarts_card" id="${elementId}" data-card-id="${cardId}" style="background-position: ${posX}% ${posY}%;"></div>';
 
 </script>
 

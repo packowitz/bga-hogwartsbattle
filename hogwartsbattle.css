@@ -145,7 +145,7 @@
 }
 
 .played_cards {
-    width: 100px;
+    height: 140px;
 }
 
 .hogwarts_card {
@@ -154,6 +154,10 @@
     background-image: url('img/hogwarts_cards.png');
     background-size: 1600px;
     filter: drop-shadow(2px 2px 2px #444);
+}
+
+.acquired_hogwarts_card {
+    position: absolute;
 }
 
 .discard_pile {
@@ -172,6 +176,12 @@
     margin-left: 20px;
     width: 220px;
     height: 460px;
+}
+
+.can_play {
+    border-radius: 5px;
+    animation: pulse 1s infinite alternate;
+    cursor: pointer;
 }
 
 .can_acquire {

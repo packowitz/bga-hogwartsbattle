@@ -206,6 +206,7 @@ class HogwartsBattle extends Table
             // Add cards
             $players[$player_id]['hand_card_count'] = $this->getDeck($player_id)->countCardInLocation('hand');
             $players[$player_id]['discard_cards'] = $this->getDeck($player_id)->getCardsInLocation('discard');
+            $players[$player_id]['discard_cards_count'] = $this->getDeck($player_id)->countCardInLocation('discard');
         }
 
         return $players;
@@ -326,7 +327,6 @@ class HogwartsBattle extends Table
     function playCard($cardId) {
         self::checkAction("playCard");
         $playerId = self::getActivePlayerId();
-        $playerUpdates = $this->getPlayerUpdate();
         $deck = self::getDeck($playerId);
         $card = $deck->getCard($cardId);
         $hogwartsCard = $this->hogwartsCardsLibrary->getCard($card['type'], $card['type_arg']);
@@ -350,7 +350,6 @@ class HogwartsBattle extends Table
             switch ($action) {
                 case '+1inf':
                     self::DbQuery("UPDATE player set player_influence = player_influence + 1 where player_id = " . $playerId);
-                    $playerUpdates[$playerId]['influenceDiff'] += 1;
                     $notif_log .= ': +1 ${influence_token}';
                     $notif_args['influence_token'] = $this->getLogsGainInfluenceIcon();
                     break;
@@ -362,8 +361,7 @@ class HogwartsBattle extends Table
 
         if ($executionComplete == true) {
             $deck->moveCard($cardId, 'played');
-            $playerUpdates[$playerId]['handCardsDiff'] -= 1;
-            $notif_args['player_updates'] = $playerUpdates;
+            $notif_args['players'] = $this->getPlayerStats();
             $notif_args['acquirable_hogwarts_cards'] = $this->getAcquirableHogwartsCards($playerId);
             self::notifyAllPlayers(
                 'cardPlayed',
@@ -378,7 +376,6 @@ class HogwartsBattle extends Table
     function acquireHogwartsCard($cardId) {
         self::checkAction("acquireHogwartsCard");
         $playerId = self::getActivePlayerId();
-        $playerUpdates = $this->getPlayerUpdate();
         $card = $this->hogwartsCards->getCard($cardId);
         $hogwartsCard = $this->hogwartsCardsLibrary->getCard($card['type'], $card['type_arg']);
 
@@ -387,7 +384,6 @@ class HogwartsBattle extends Table
             throw new feException('You don\'t have enough influence to acquire that hogwarts card');
         }
         self::DbQuery("UPDATE player set player_influence = player_influence - " . $hogwartsCard->cost . " where player_id = " . $playerId);
-        $playerUpdates[$playerId]['influenceDiff'] -= $hogwartsCard->cost;
 
         // Add acquired card to discard pile
         $this->hogwartsCards->moveCard($cardId, 'dev0');
@@ -399,19 +395,18 @@ class HogwartsBattle extends Table
 
         self::notifyAllPlayers(
             'acquireHogwartsCard',
-            clienttranslate('${player_name} acquires ${card_name} for ${card_cost}'),
+            clienttranslate('${player_name} acquires ${card_name} for ${card_cost} ${influence_token}'),
             array (
                 'i18n' => array ('card_name'),
-                'player_updates' => $playerUpdates,
-                'acquirable_hogwarts_cards' => $this->getAcquirableHogwartsCards($playerId),
+                'players' => $this->getPlayerStats(),
+                'acquired_card' => $deck->getCard($newCardId),
                 'card_id' => $cardId,
                 'new_card_id' => $newCardId,
-                'card_game_nr' => $hogwartsCard->gameNr,
-                'card_card_nr' => $hogwartsCard->cardNr,
                 'player_id' => $playerId,
                 'player_name' => self::getActivePlayerName(),
                 'card_name' => $hogwartsCard->name,
                 'card_cost' => $hogwartsCard->cost,
+                'influence_token' => $this->getLogsGainInfluenceIcon()
             )
         );
         // TODO notify active player about hogwarts card he can acquire
