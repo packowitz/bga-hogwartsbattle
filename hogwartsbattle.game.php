@@ -344,8 +344,7 @@ class HogwartsBattle extends Table
             'player_id' => $playerId,
             'card_name' => $hogwartsCard->name,
             'card_id' => $cardId,
-            'card_game_nr' => $hogwartsCard->gameNr,
-            'card_card_nr' => $hogwartsCard->cardNr,
+            'card_played' => $card,
         );
         foreach ($hogwartsCard->onPlay as $action) {
             switch ($action) {
@@ -419,7 +418,6 @@ class HogwartsBattle extends Table
                 'influence_token' => $this->getLogsGainInfluenceIcon()
             )
         );
-        // TODO notify active player about hogwarts card he can acquire
         $this->gamestate->nextState('acquireHogwartsCard');
     }
     
@@ -466,7 +464,6 @@ class HogwartsBattle extends Table
         // Clean up board and draw 5 new cards
         $deck->moveAllCardsInLocation('hand', 'discard');
         $deck->moveAllCardsInLocation('played', 'discard');
-        $newHandCards = $deck->pickCards(5, 'deck', $playerId);
         self::DbQuery("UPDATE player set player_attack = 0, player_influence = 0 where player_id = " . $playerId);
 
         // Refill hogwarts cards
@@ -484,8 +481,22 @@ class HogwartsBattle extends Table
                 'new_hogwarts_cards' => $newHogwartsCards,
                 'player_id' => $playerId,
                 'player_name' => self::getActivePlayerName(),
-                'new_hand_cards' => $newHandCards
             )
+        );
+        $this->gamestate->nextState();
+    }
+
+    function stRefillHandCards() {
+        $playerId = self::getActivePlayerId();
+        $deck = self::getDeck($playerId);
+
+        $newHandCards = $deck->pickCards(5, 'deck', $playerId);
+
+        self::notifyPlayer($playerId, 'refillHandCards', '', array('new_hand_cards' => $newHandCards));
+        self::notifyAllPlayers(
+            'refillHandCardsLog',
+            clienttranslate('${player_name} draws 5 new cards'),
+            array ('player_name' => self::getActivePlayerName(), 'players' => self::getPlayerStats())
         );
 
         // Next Player

@@ -36,6 +36,8 @@ function (dojo, declare) {
 
             this.discard_piles = {};
 
+            this.acquirableHogwartsCards = [];
+
             // this.handCardsZone = new ebg.zone();
             // this.handCardsZone.create(this, 'myhand', 100, 140);
             // this.handCardsZone.setPattern('horizontalfit');
@@ -122,8 +124,8 @@ function (dojo, declare) {
             }
 
             this.revealHogwartsCards(gamedatas.hogwarts_cards);
-            this.checkAcquirableHogwartsCards(gamedatas.acquirable_hogwarts_cards);
             this.drawHogwartsCards(gamedatas.hand);
+            this.acquirableHogwartsCards = gamedatas.acquirable_hogwarts_cards;
 
             // Setup game notifications to handle (see "setupNotifications" method below)
             this.setupNotifications();
@@ -138,34 +140,27 @@ function (dojo, declare) {
         // onEnteringState: this method is called each time we are entering into a new game state.
         //                  You can use this method to perform some user interface changes at this moment.
         //
-        onEnteringState: function( stateName, args )
-        {
-            console.log( 'Entering state: '+stateName );
-            
-            switch( stateName )
-            {
-            
-            /* Example:
-            
-            case 'myGameState':
-            
-                // Show some HTML block at this game state
-                dojo.style( 'my_html_block_id', 'display', 'block' );
-                
-                break;
-           */
+        onEnteringState: function (stateName, args) {
+            console.log('Entering state: ' + stateName);
 
-            case 'playerTurn':
-                if (this.isCurrentPlayerActive()) {
-                    this.extractCards(this.playerHand).forEach(card => {
-                        let cardNode = dojo.byId(card.id);
-                        if (!dojo.hasClass(cardNode, 'can_play')) {
-                            dojo.addClass(cardNode, 'can_play');
-                            this.connect( $(card.id), 'onclick', 'onPlayHandCard');
-                        }
-                    });
+            switch (stateName) {
+                case 'playerTurn': {
+                    if (this.isCurrentPlayerActive()) {
+                        this.extractCards(this.playerHand).forEach(card => {
+                            let cardNode = dojo.byId(card.id);
+                            if (!dojo.hasClass(cardNode, 'can_play')) {
+                                dojo.addClass(cardNode, 'can_play');
+                                this.connect($(card.id), 'onclick', 'onPlayHandCard');
+                            }
+                        });
+                        this.checkAcquirableHogwartsCards();
+                    }
+                    break;
                 }
-                break;
+                case 'endTurn': {
+                    this.acquirableHogwartsCards = [];
+                    break;
+                }
             }
         },
 
@@ -176,23 +171,19 @@ function (dojo, declare) {
         {
             console.log( 'Leaving state: '+stateName );
             
-            switch( stateName )
-            {
-            
-            /* Example:
-            
-            case 'myGameState':
-            
-                // Hide the HTML block we are displaying only during this game state
-                dojo.style( 'my_html_block_id', 'display', 'none' );
-                
-                break;
-           */
-           
-           
-            case 'dummmy':
-                break;
-            }               
+            switch( stateName ) {
+                case 'playerTurn': {
+                    this.clearAcquirableHogwartsCards();
+                    if (this.isCurrentPlayerActive()) {
+                        // remove can_play indicator and handle
+                        this.extractCards(this.playerHand).forEach(card => {
+                            dojo.removeClass(dojo.byId(card.id), 'can_play');
+                            this.disconnect( $(card.id), 'onclick');
+                        });
+                    }
+                    break;
+                }
+            }
         }, 
 
         // onUpdateActionButtons: in this method you can manage "action buttons" that are displayed in the
@@ -255,7 +246,7 @@ function (dojo, declare) {
                     this.extractCards(this.discard_piles[playerId]).forEach(card => {
                         let cardNode = dojo.byId(card.id);
                         if(!currentDiscardIds.includes(cardNode.dataset.cardId)) {
-                            console.log('remove ' + card.id + ' from discard pile');
+                            dojo.addClass(cardNode, 'to_be_removed');
                             removedElemIds.push(card.id);
                             this.discard_piles[playerId].removeFromZone(card.id, true);
                         }
@@ -267,18 +258,6 @@ function (dojo, declare) {
                         if (!dojo.byId(cardElemId)) {
                             this.placeHogwartsCard(card, this.discard_piles[playerId], 'player_discard_' + playerId, playerId);
                         }
-                    }
-
-                    // there is a bug that some items may not be completely removed from DOM
-                    if (removedElemIds.length > 0) {
-                        setTimeout(() => {
-                            removedElemIds.forEach(elemId => {
-                                let cardNode = dojo.byId(elemId);
-                                if (cardNode) {
-                                    dojo.destroy(cardNode);
-                                }
-                            });
-                        }, 2000);
                     }
                 }
             }
@@ -316,32 +295,44 @@ function (dojo, declare) {
             zone.placeInZone(elementId);
         },
 
-        checkAcquirableHogwartsCards: function(acquirableCardIds) {
-            if (acquirableCardIds) {
+        clearAcquirableHogwartsCards: function() {
+            this.extractCards(this.hogwartsCards).forEach(card => {
+                let cardNode = dojo.byId(card.id);
+                if (dojo.hasClass(cardNode, 'can_acquire')) {
+                    dojo.removeClass(cardNode, 'can_acquire');
+                    this.disconnect( $(card.id), 'onclick');
+                }
+            });
+        },
+
+        checkAcquirableHogwartsCards: function() {
+            if (this.acquirableHogwartsCards) {
                 this.extractCards(this.hogwartsCards).forEach(card => {
                     let cardNode = dojo.byId(card.id);
                     let cardId = parseInt(cardNode.dataset.cardId);
                     if (dojo.hasClass(cardNode, 'can_acquire')) {
-                        if (!acquirableCardIds.includes(cardId)) {
+                        if (!this.acquirableHogwartsCards.includes(cardId)) {
                             dojo.removeClass(cardNode, 'can_acquire');
                             this.disconnect( $(card.id), 'onclick');
                         }
                     } else {
-                        if (acquirableCardIds.includes(cardId)) {
+                        if (this.acquirableHogwartsCards.includes(cardId)) {
                             dojo.addClass(cardNode, 'can_acquire');
                             this.connect( $(card.id), 'onclick', 'onAcquireHogwartsCard');
                         }
                     }
                 });
+            } else {
+                this.clearAcquirableHogwartsCards();
             }
         },
 
-        drawHogwartsCards: function(hogwartsCards, isEndOfTurn) {
+        drawHogwartsCards: function(hogwartsCards) {
             if (hogwartsCards) {
                 for (let idx in hogwartsCards) {
                     let card = hogwartsCards[idx];
                     this.placeHogwartsCard(card, this.playerHand, 'myhand', this.player_id);
-                    if (!isEndOfTurn && this.isCurrentPlayerActive()) {
+                    if (this.isCurrentPlayerActive()) {
                         let elementId = 'hogwarts_card_' + card.id + '_p' + this.player_id;
                         dojo.addClass(dojo.byId(elementId), 'can_play');
                         this.connect( $(elementId), 'onclick', 'onPlayHandCard');
@@ -367,10 +358,6 @@ function (dojo, declare) {
 
         onEndTurn: function (evt) {
             dojo.stopEvent(evt);
-
-            // clean up hogwarts cards
-            this.checkAcquirableHogwartsCards([]);
-
             let action = 'endTurn';
             if (this.checkAction(action, true)) {
                 this.ajaxcall("/" + this.game_name + "/" + this.game_name + "/" + action + ".html", {
@@ -467,9 +454,11 @@ function (dojo, declare) {
             // dojo.subscribe( 'cardPlayed', this, "notif_cardPlayed" );
             // this.notifqueue.setSynchronous( 'cardPlayed', 3000 );
             //
-            dojo.subscribe( 'endTurn', this, "notif_endTurn" );
-            dojo.subscribe( 'cardPlayed', this, "notif_cardPlayed" );
-            dojo.subscribe( 'acquireHogwartsCard', this, "notif_acquireHogwartsCard" );
+            dojo.subscribe('endTurn', this, "notif_endTurn");
+            dojo.subscribe('refillHandCards', this, "notif_refillHandCards");
+            dojo.subscribe('refillHandCardsLog', this, "notif_refillHandCardsLog");
+            dojo.subscribe('cardPlayed', this, "notif_cardPlayed");
+            dojo.subscribe('acquireHogwartsCard', this, "notif_acquireHogwartsCard");
         },
         
         // TODO: from this point and below, you can write your game notifications handling methods
@@ -500,31 +489,40 @@ function (dojo, declare) {
                 // discard unplayed hand cards
                 this.extractCards(this.playerHand).forEach(card => {
                     this.playerHand.removeFromZone(card.id);
-                    dojo.removeClass(dojo.byId(card.id), 'can_play');
-                    this.disconnect( $(card.id), 'onclick');
                     this.discard_piles[notif.args.player_id].placeInZone(card.id);
                 });
-                this.drawHogwartsCards(notif.args.new_hand_cards, true);
             }
             this.updatePlayerStats(notif.args.players);
             this.revealHogwartsCards(notif.args.new_hogwarts_cards);
         },
 
+        notif_refillHandCards: function(notif) {
+            setTimeout(() => this.drawHogwartsCards(notif.args.new_hand_cards), 1000);
+        },
+
+        notif_refillHandCardsLog: function(notif) {
+            this.updatePlayerStats(notif.args.players);
+        },
+
         notif_cardPlayed: function(notif) {
-            this.checkAcquirableHogwartsCards(notif.args.acquirable_hogwarts_cards);
+            this.acquirableHogwartsCards = notif.args.acquirable_hogwarts_cards;
+            this.checkAcquirableHogwartsCards();
 
             if (this.player_id == notif.args.player_id) {
-                let cardElemId = 'hogwarts_card_' + notif.args.card_id + '_p' + this.player_id;
+                let cardElemId = 'hogwarts_card_' + notif.args.card_id + '_p' + notif.args.player_id;
                 this.playerHand.removeFromZone(cardElemId);
                 dojo.removeClass(dojo.byId(cardElemId), 'can_play');
                 this.disconnect( $(cardElemId), 'onclick');
                 this.playedCards.placeInZone(cardElemId);
+            } else {
+                this.placeHogwartsCard(notif.args.card_played, this.playedCards, 'overall_player_board_' + notif.args.player_id, notif.args.player_id);
             }
             this.updatePlayerStats(notif.args.players);
         },
 
         notif_acquireHogwartsCard: function(notif) {
-            this.checkAcquirableHogwartsCards(notif.args.acquirable_hogwarts_cards);
+            this.acquirableHogwartsCards = notif.args.acquirable_hogwarts_cards;
+            this.checkAcquirableHogwartsCards();
 
             let cardElemId = 'hogwarts_card_' + notif.args.card_id;
 
@@ -534,6 +532,7 @@ function (dojo, declare) {
                 dojo.removeClass(dojo.byId(cardElemId), 'can_acquire');
             }
 
+            // move acquired hogwarts card to players discard pile
             this.hogwartsCards.removeFromZone(cardElemId);
             let cardElem = dojo.byId(cardElemId);
             let newElemId = 'hogwarts_card_' + notif.args.new_card_id + '_p' + notif.args.player_id;
