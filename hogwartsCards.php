@@ -35,11 +35,11 @@ class HogwartsCards {
     function __construct() {
         $this->hogwartsCards = array(
             0 => new HogwartsCard(0, 0, 'Alohomora', 0, self::$spellType, array('+1inf')),
-            1 => new HogwartsCard(0, 1, 'Firebolt', 0, self::$itemType),
+            1 => new HogwartsCard(0, 1, 'Firebolt', 0, self::$itemType, array('+1att', '+1inf_onDefVil_1x')),
             2 => new HogwartsCard(0, 2, 'Invisibility Cloak', 0, self::$itemType),
             3 => new HogwartsCard(0, 3, 'Hedwig', 0, self::$allyType),
             4 => new HogwartsCard(0, 4, 'Alohomora', 0, self::$spellType, array('+1inf')),
-            5 => new HogwartsCard(0, 5, 'Cleansweep 11', 0, self::$itemType),
+            5 => new HogwartsCard(0, 5, 'Cleansweep 11', 0, self::$itemType, array('+1att', '+1inf_onDefVil_1x')),
             6 => new HogwartsCard(0, 6, 'Bertie Botts Every Flavour Beans', 0, self::$itemType),
             7 => new HogwartsCard(0, 7, 'Pigwidgeon', 0, self::$allyType),
             8 => new HogwartsCard(0, 8, 'Alohomora', 0, self::$spellType, array('+1inf')),

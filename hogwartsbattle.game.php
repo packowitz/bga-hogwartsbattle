@@ -23,6 +23,10 @@ require_once('hogwartsCards.php');
 
 class HogwartsBattle extends Table
 {
+    private static $TRIGGER_ON_DEFEAT_VILLAIN = 'onDefeatVillain';
+
+    private static $SOURCE_HOGWARTS_CARD = 'hogwartsCard';
+
 	function __construct( )
 	{
         // Your global variables labels:
@@ -126,8 +130,6 @@ class HogwartsBattle extends Table
         //self::initStat( 'table', 'table_teststat1', 0 );    // Init a table statistics
         //self::initStat( 'player', 'player_teststat1', 0 );  // Init a player statistics (for all players)
 
-        // TODO: setup the initial game situation here
-       
 
         // Activate first player (which is in general a good idea :) )
         $this->activeNextPlayer();
@@ -160,6 +162,8 @@ class HogwartsBattle extends Table
         $result['played_cards'] = $this->getDeck(self::getActivePlayerId())->getCardsInLocation('played');
 
         $result['hogwarts_cards'] = $this->hogwartsCards->getCardsInLocation('revealed');
+
+        $result['effects'] = $this->getActiveEffects();
 
         if ($isActivePlayer == true) {
             $result['acquirable_hogwarts_cards'] = $this->getAcquirableHogwartsCards($current_player_id);
@@ -212,20 +216,17 @@ class HogwartsBattle extends Table
         return $players;
     }
 
-    function getPlayerUpdate() {
-        $players = self::loadPlayersBasicInfos();
-        $update = array();
-        foreach ( $players as $player_id => $info ) {
-            $update[$player_id] = array(
-                'healthDiff' => 0,
-                'attackDiff' => 0,
-                'influenceDiff' => 0,
-                'handCardsDiff' => 0,
-                'newCardsInDiscard' => array(),
-                'deck_shuffled' => false
-            );
-        }
-        return $update;
+    function getActiveEffects() {
+        $sql = "SELECT effect_id id, effect_key, effect_trigger, effect_name name, effect_source source, effect_source_id source_id FROM effect";
+        return self::getCollectionFromDb($sql);
+    }
+
+    function addEffect($effect_key, $effect_trigger, $name, $source, $source_id) {
+        self::DbQuery("INSERT INTO effect(effect_key, effect_trigger, effect_name, effect_source, effect_source_id) VALUES('$effect_key', '$effect_trigger', '$name', '$source', '$source_id');");
+    }
+
+    function clearAllEffects() {
+        self::DbQuery("DELETE FROM effect");
     }
 
     function getAcquirableHogwartsCards($playerId) {
@@ -350,11 +351,20 @@ class HogwartsBattle extends Table
             switch ($action) {
                 case '+1inf':
                     self::DbQuery("UPDATE player set player_influence = player_influence + 1 where player_id = " . $playerId);
-                    $notif_log .= ': +1 ${influence_token}';
+                    $notif_log .= ' and gains 1 ${influence_token}';
+                    $notif_args['influence_token'] = $this->getLogsGainInfluenceIcon();
+                    break;
+                case '+1att':
+                    self::DbQuery("UPDATE player set player_attack = player_attack + 1 where player_id = " . $playerId);
+                    $notif_log .= ' and gains 1 ${attack_token}.';
+                    $notif_args['attack_token'] = $this->getLogsGainAttackIcon();
+                    break;
+                case '+1inf_onDefVil_1x':
+                    $this->addEffect('+1inf', self::$TRIGGER_ON_DEFEAT_VILLAIN, $hogwartsCard->name, self::$SOURCE_HOGWARTS_CARD, $cardId);
                     $notif_args['influence_token'] = $this->getLogsGainInfluenceIcon();
                     break;
                 default:
-                    $notif_log .= ' Oh no, this card is not implemented yet. (' . $action . ')';
+                    $notif_log .= ' Oh no, this action is not implemented yet. (' . $action . ')';
                     break;
             }
         }
