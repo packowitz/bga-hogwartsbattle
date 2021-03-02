@@ -58,6 +58,21 @@ $machinestates = array(
         "description" => "",
         "type" => "manager",
         "action" => "stGameSetup",
+        "transitions" => array("" => 10)
+    ),
+
+    10 => array(
+        "name" => "initTurn",
+        "description" => "",
+        "type" => "game",
+        "action" => "stInitTurn",
+        "transitions" => array("" => 19)
+    ),
+    19 => array(
+        "name" => "beforePlayerTurn",
+        "description" => "",
+        "type" => "game",
+        "action" => "stBeforePlayerTurn",
         "transitions" => array("" => 20)
     ),
 
@@ -96,6 +111,13 @@ $machinestates = array(
         "description" => "",
         "type" => "game",
         "action" => "stRefillHandCards",
+        "transitions" => array("" => 76)
+    ),
+    76 => array(
+        "name" => "cleanEffectsNextPlayer",
+        "description" => "",
+        "type" => "game",
+        "action" => "stCleanEffectsNextPlayer",
         "transitions" => array("" => 20)
     ),
 

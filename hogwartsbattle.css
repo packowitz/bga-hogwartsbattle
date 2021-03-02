@@ -123,6 +123,30 @@
     vertical-align: bottom;
 }
 
+.active_effects {
+    display: flex;
+    align-items: center;
+}
+
+.active_effect {
+    display: flex;
+    align-items: center;
+    border: 2px solid black;
+    border-radius: 10px;
+    padding: 3px;
+    background-color: #d3bf9a;
+}
+
+.effect_icon {
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+    margin-right: 2px;
+    background-image: url(img/sprites.png);
+    background-size: 220px;
+    vertical-align: bottom;
+}
+
 .player_board {
     display: flex;
 }
@@ -176,6 +200,10 @@
     margin-left: 20px;
     width: 220px;
     height: 460px;
+}
+
+.active_effects {
+    display: flex;
 }
 
 .can_play {

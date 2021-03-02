@@ -45,7 +45,7 @@
         foreach ( $players as $player_id => $info ) {
             $this->page->insert_block("player", array (
                 "PLAYER_ID" => $player_id,
-                "PLAYER_NAME" => $players [$player_id] ['player_name'] . self::_("'s discard pile'"),
+                "PLAYER_NAME" => $players [$player_id] ['player_name'] . self::_("'s discard pile"),
                 "PLAYER_COLOR" => $players [$player_id] ['player_color']
             ));
         }
@@ -54,6 +54,8 @@
         $this->tpl['HOGWARTS_CARDS'] = self::_("Hogwarts cards");
         $this->tpl['BOARD'] = self::_("Played cards");
         $this->tpl['MY_HAND'] = self::_("My hand");
+        $this->tpl['EFFECTS'] = self::_("Effects");
+        $this->tpl['DARK_ARTS'] = self::_("Dark Arts events");
 
         /*
         

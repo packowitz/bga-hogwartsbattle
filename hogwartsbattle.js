@@ -37,6 +37,7 @@ function (dojo, declare) {
             this.discard_piles = {};
 
             this.acquirableHogwartsCards = [];
+            this.visibleEffectIds = [];
 
             // this.handCardsZone = new ebg.zone();
             // this.handCardsZone.create(this, 'myhand', 100, 140);
@@ -71,6 +72,12 @@ function (dojo, declare) {
                          
                 var player_board_div = $('player_board_' + player_id);
                 dojo.place( this.format_block('jstpl_player_board', player ), player_board_div );
+
+                // add tooltips
+                this.addTooltip('health_icon_p' + player_id, _('Health (0-10)'), '' );
+                this.addTooltip('attack_icon_p' + player_id, _('Attack tokens'), '' );
+                this.addTooltip('influence_icon_p' + player_id, _('Influence tokens'), '' );
+                this.addTooltip('hand_cards_icon_p' + player_id, _('Hand cards'), '' );
 
                 // create counter per player
                 this.health_counters[player_id] = new ebg.counter();
@@ -120,12 +127,15 @@ function (dojo, declare) {
 
             for (let cardIdx in gamedatas.played_cards) {
                 let card = gamedatas.played_cards[cardIdx];
-                this.placeHogwartsCard(card, this.playedCards, 'played_cards');
+                this.placeHogwartsCard(card, this.playedCards, 'played_cards', gamedatas.active_player);
             }
 
             this.revealHogwartsCards(gamedatas.hogwarts_cards);
             this.drawHogwartsCards(gamedatas.hand);
             this.acquirableHogwartsCards = gamedatas.acquirable_hogwarts_cards;
+            console.log('acquirable hogwarts cards');
+            console.log(this.acquirableHogwartsCards);
+            this.checkActiveEffects(gamedatas.effects);
 
             // Setup game notifications to handle (see "setupNotifications" method below)
             this.setupNotifications();
@@ -275,6 +285,8 @@ function (dojo, declare) {
             if (hogwartsCards) {
                 for (let i in hogwartsCards) {
                     let card = hogwartsCards[i];
+                    console.log('reveal hogwarts card');
+                    console.log(card);
                     this.placeHogwartsCard(card, this.hogwartsCards, 'hogwarts_cards');
                 }
             }
@@ -338,6 +350,64 @@ function (dojo, declare) {
                         this.connect( $(elementId), 'onclick', 'onPlayHandCard');
                     }
                 }
+            }
+        },
+
+        checkActiveEffects: function(effects) {
+            if (effects) {
+                // remove effects not in place anymore
+                let effectIds = [];
+                for (idx in effects) {
+                    effectIds.push(effects[idx].id);
+                }
+                let effectIdsToRemove = [];
+                this.visibleEffectIds.forEach(effectId => {
+                    if (!effectIds.includes(effectId)) {
+                        effectIdsToRemove.push(effectId);
+                    }
+                });
+                effectIdsToRemove.forEach(this.removeActiveEffect);
+
+                // add missing effects
+                for (idx in effects) {
+                    let effect = effects[idx];
+                    if (!this.visibleEffectIds.includes(effect.id)) {
+                        this.addActiveEffect(effect);
+                    }
+                }
+            }
+        },
+
+        addActiveEffect: function(effect) {
+            let iconX = 0;
+            let iconY = 0;
+            switch (effect.effect_trigger) {
+                case 'onDefeatVillain':
+                    iconX = 30;
+                    iconY = 100;
+                    break;
+            }
+
+            dojo.place(
+              this.format_block('jstpl_active_effect', {
+                  elementId: 'active_effect_' + effect.id,
+                  effectId: effect.id,
+                  effectName: effect.name,
+                  iconX: iconX,
+                  iconY: iconY,
+              }), 'active_effects');
+            this.visibleEffectIds.push(effect.id);
+            this.addTooltipHtml('active_effect_' + effect.id, this.format_block('jstpl_hogwarts_card_tooltip', {
+                cardName: effect.name
+            }));
+        },
+
+        removeActiveEffect: function(effectId) {
+            this.removeTooltip('active_effect_' + effectId);
+            dojo.destroy('active_effect_' + effectId);
+            let idx = this.visibleEffectIds.indexOf(effectId);
+            if (idx >= 0) {
+                this.visibleEffectIds.splice(idx, 1);
             }
         },
 

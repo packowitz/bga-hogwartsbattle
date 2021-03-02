@@ -155,7 +155,7 @@ class HogwartsBattle extends Table
 
         $result['players'] = self::getPlayerStats();
 
-        // TODO: Gather all information about current game situation (visible by player $current_player_id).
+        $result['active_player'] = self::getActivePlayerId();
 
         $result['hand'] = $this->getDeck($current_player_id)->getCardsInLocation('hand');
 
@@ -457,6 +457,18 @@ class HogwartsBattle extends Table
         The action method of state X is called everytime the current game state is set to X.
     */
 
+    function stInitTurn() {
+
+        // TODO check handCards->onHand, villains and horcrux effects
+
+        $this->gamestate->nextState();
+    }
+
+    function stBeforePlayerTurn() {
+        // just a step for UI to prep for turn
+        $this->gamestate->nextState();
+    }
+
     function stEndTurn() {
         $playerId = self::getActivePlayerId();
         $deck = self::getDeck($playerId);
@@ -498,6 +510,11 @@ class HogwartsBattle extends Table
             clienttranslate('${player_name} draws 5 new cards'),
             array ('player_name' => self::getActivePlayerName(), 'players' => self::getPlayerStats())
         );
+        $this->gamestate->nextState();
+    }
+
+    function stCleanEffectsNextPlayer() {
+        $this->clearAllEffects();
 
         // Next Player
         $this->activeNextPlayer();

@@ -41,9 +41,20 @@
 <div class="game_board">
     <div class="flex-grow">
         <div class="whiteblock">
+            <div id="active_effects" class="active_effects">
+                <h3 style="margin-right: 5px;">{EFFECTS}</h3>
+            </div>
+        </div>
+        <div id="played_cards_wrapper" class="whiteblock">
             <h3>{BOARD}</h3>
             <div class="card_height">
                 <div id="played_cards"></div>
+            </div>
+        </div>
+        <div id="dark_arts_events_wrapper" class="whiteblock" style="display: none;">
+            <h3>{DARK_ARTS}</h3>
+            <div class="card_height">
+                <div id="dark_arts_events"></div>
             </div>
         </div>
     </div>
@@ -77,15 +88,27 @@
 
 */
 
-  var jstpl_player_board = '<div class="player_stats">\
-  <div class="player_stat">${hero_name}</div>\
-  <div class="player_stat"><div class="health_icon"></div><span id="health_stat_p${id}">0</span></div>\
-  <div class="player_stat"><div class="attack_icon"></div><span id="attack_stat_p${id}">0</span></div>\
-  <div class="player_stat"><div class="influence_icon"></div><span id="influence_stat_p${id}">0</span></div>\
-  <div class="player_stat"><div class="hand_cards_icon"></div><span id="hand_cards_stat_p${id}">0</span></div>\
-</div>';
+  var jstpl_player_board =
+    '<div class="player_stats">\
+        <div class="player_stat">${hero_name}</div>\
+        <div class="player_stat"><div class="health_icon" id="health_icon_p${id}"></div><span id="health_stat_p${id}">0</span></div>\
+        <div class="player_stat"><div class="attack_icon" id="attack_icon_p${id}"></div><span id="attack_stat_p${id}">0</span></div>\
+        <div class="player_stat"><div class="influence_icon" id="influence_icon_p${id}"></div><span id="influence_stat_p${id}">0</span></div>\
+        <div class="player_stat"><div class="hand_cards_icon" id="hand_cards_icon_p${id}"></div><span id="hand_cards_stat_p${id}">0</span></div>\
+    </div>';
 
   var jstpl_hogwarts_card = '<div class="hogwarts_card" id="${elementId}" data-card-id="${cardId}" style="background-position: ${posX}% ${posY}%; position: absolute; top: 0; left: 0;"></div>';
+
+  var jstpl_hogwarts_card_tooltip =
+    '<div class="hogwarts_card_tooltip">\
+        <div>${cardName}</div>\
+    </div>';
+
+  var jstpl_active_effect =
+    '<div class="active_effect" id="${elementId}" data-effect-id="${effectId}">\
+        <div class="effect_icon" style="background-position: ${iconX}% ${iconY}%;"></div>\
+        <div>${effectName}</div>\
+    </div>';
 
 </script>
 
