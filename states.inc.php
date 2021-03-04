@@ -82,7 +82,7 @@ $machinestates = array(
         "descriptionmyturn" => clienttranslate('${you} must play cards or end your turn'),
         "type" => "activeplayer",
         "possibleactions" => array("playCard", "acquireHogwartsCard", "endTurn"),
-        "transitions" => array("playCard" => 20, "acquireHogwartsCard" => 20, "endTurn" => 70)
+        "transitions" => array("playCard" => 21, "acquireHogwartsCard" => 20, "endTurn" => 70)
     ),
     21 => array(
         "name" => "playCard",
@@ -93,10 +93,11 @@ $machinestates = array(
     ),
     22 => array(
         "name" => "chooseCardOption",
-        "description" => clienttranslate('${actplayer} decide card options'),
-        "descriptionmyturn" => clienttranslate('${you} must decide card options'),
+        "description" => clienttranslate('${actplayer} decides on card options'),
+        "descriptionmyturn" => clienttranslate('${you} must decide'),
         "type" => "activeplayer",
-        "possibleactions" => array("decide"),
+        "args" => "argChooseCardOption",
+        "possibleactions" => array("decidePlayCardOption"),
         "transitions" => array("" => 21)
     ),
     70 => array(

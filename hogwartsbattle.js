@@ -209,7 +209,7 @@ function (dojo, declare) {
         //        
         onUpdateActionButtons: function( stateName, args )
         {
-            console.log( 'onUpdateActionButtons: '+stateName );
+            console.log('onUpdateActionButtons: ' + stateName);
                       
             if( this.isCurrentPlayerActive() )
             {            
@@ -227,9 +227,19 @@ function (dojo, declare) {
                     this.addActionButton( 'button_3_id', _('Button 3 label'), 'onMyMethodToCall3' ); 
                     break;
 */
-                    case 'playerTurn':
-                        this.addActionButton( 'endTurnId', 'End turn', 'onEndTurn' );
+                    case 'playerTurn': {
+                        this.addActionButton('endTurnId', 'End turn', 'onEndTurn');
                         break;
+                    }
+                    case 'chooseCardOption': {
+                        console.log('args: ');
+                        console.log(args);
+                        for (let option in args) {
+                            let optId = option.substr('option_'.length);
+                            this.addActionButton(option, args[option], (evt) => { this.onDecideOnPlayHandCard(evt, optId); });
+                        }
+                        break;
+                    }
                 }
             }
         },        
@@ -423,7 +433,7 @@ function (dojo, declare) {
                         effectIdsToRemove.push(effectId);
                     }
                 });
-                effectIdsToRemove.forEach(this.removeActiveEffect);
+                effectIdsToRemove.forEach(effectId => this.removeActiveEffect(effectId));
 
                 // add missing effects
                 for (idx in effects) {
@@ -475,7 +485,7 @@ function (dojo, declare) {
             dojo.stopEvent(evt);
             let action = 'endTurn';
             if (this.checkAction(action, true)) {
-                this.ajaxcall("/" + this.game_name + "/" + this.game_name + "/" + action + ".html", {
+                this.ajaxcall(`/${this.game_name}/${this.game_name}/${action}.html`, {
                     lock : true
                 }, this, function(result) {}, function(is_error) {});
             }
@@ -487,7 +497,7 @@ function (dojo, declare) {
             console.log('acquire hogwarts card ' + cardId);
             let action = 'acquireHogwartsCard';
             if (this.checkAction(action, true)) {
-                this.ajaxcall("/" + this.game_name + "/" + this.game_name + "/" + action + ".html", {
+                this.ajaxcall(`/${this.game_name}/${this.game_name}/${action}.html`, {
                     id : cardId,
                     lock : true
                 }, this, function(result) {}, function(is_error) {});
@@ -500,8 +510,18 @@ function (dojo, declare) {
             console.log('play hand card ' + cardId);
             let action = 'playCard';
             if (this.checkAction(action, true)) {
-                this.ajaxcall("/" + this.game_name + "/" + this.game_name + "/" + action + ".html", {
+                this.ajaxcall(`/${this.game_name}/${this.game_name}/${action}.html`, {
                     id : cardId,
+                    lock : true
+                }, this, function(result) {}, function(is_error) {});
+            }
+        },
+
+        onDecideOnPlayHandCard: function(evt, cardOption) {
+            let action = 'decidePlayCardOption';
+            if (this.checkAction(action, true)) {
+                this.ajaxcall(`/${this.game_name}/${this.game_name}/${action}.html`, {
+                    option : cardOption,
                     lock : true
                 }, this, function(result) {}, function(is_error) {});
             }

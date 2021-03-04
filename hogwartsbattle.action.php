@@ -49,6 +49,13 @@ class action_hogwartsbattle extends APP_GameAction {
         self::ajaxResponse();
     }
 
+    public function decidePlayCardOption() {
+        self::setAjaxMode();
+        $card_option = self::getArg("option", AT_posint, true);
+        $this->game->playCardOption($card_option);
+        self::ajaxResponse();
+    }
+
     public function endTurn() {
         self::setAjaxMode();
         $this->game->endTurn();

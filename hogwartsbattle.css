@@ -80,12 +80,12 @@
 }
 
 .icon {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     display: inline-block;
     margin-right: 2px;
     background-image: url(img/sprites.png);
-    background-size: 220px;
+    background-size: 198px;
     vertical-align: bottom;
 }
 
