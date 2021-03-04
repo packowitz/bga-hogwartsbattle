@@ -34,6 +34,8 @@ function (dojo, declare) {
             this.influence_counters = {};
             this.handCards_counters = {};
 
+            this.hogwartsCardDescriptions = {};
+
             this.discard_piles = {};
 
             this.acquirableHogwartsCards = [];
@@ -64,6 +66,8 @@ function (dojo, declare) {
         setup: function( gamedatas )
         {
             console.log( "Starting game setup" );
+
+            this.hogwartsCardDescriptions = gamedatas.hogwarts_cards_descriptions;
             
             // Setting up player boards
             for(var player_id in gamedatas.players)
@@ -169,6 +173,10 @@ function (dojo, declare) {
                 }
                 case 'endTurn': {
                     this.acquirableHogwartsCards = [];
+                    break;
+                }
+                case 'cleanEffectsNextPlayer': {
+                    this.checkActiveEffects([]);
                     break;
                 }
             }
@@ -285,8 +293,6 @@ function (dojo, declare) {
             if (hogwartsCards) {
                 for (let i in hogwartsCards) {
                     let card = hogwartsCards[i];
-                    console.log('reveal hogwarts card');
-                    console.log(card);
                     this.placeHogwartsCard(card, this.hogwartsCards, 'hogwarts_cards');
                 }
             }
@@ -297,14 +303,18 @@ function (dojo, declare) {
             if (playerId) {
                 elementId += '_p' + playerId;
             }
+            let gameNr = parseInt(card.type);
+            let cardNr = parseInt(card.type_arg);
+            let cardTypeId = (gameNr * 100) + cardNr;
             dojo.place(
               this.format_block( 'jstpl_hogwarts_card', {
                   elementId: elementId,
                   cardId: card.id,
-                  posX: -100 * parseInt(card.type_arg),
-                  posY: 100 * parseInt(card.type),
+                  posX: -100 * cardNr,
+                  posY: 100 * gameNr,
               }), zoneElemId);
             zone.placeInZone(elementId);
+            this.addHogwartsCardTooltip(elementId, cardTypeId);
         },
 
         clearAcquirableHogwartsCards: function() {
@@ -353,6 +363,53 @@ function (dojo, declare) {
             }
         },
 
+        addHogwartsCardTooltip: function(elementId, typeId) {
+            let cardDesc = this.hogwartsCardDescriptions[typeId];
+            //console.log('Show hogwarts tooltip');
+            //console.log(cardDesc);
+            let description = this.format_block('jstpl_tooltip_text', {
+                text: this.textToIconSubstitute(cardDesc.desc['onPlay'])
+            });
+            for (var descKey in cardDesc.desc) {
+                if (descKey != 'onPlay') {
+                    description += this.format_block('jstpl_tooltip_text_with_icon', {
+                        icon: this.getIcon(descKey),
+                        text: this.textToIconSubstitute(cardDesc.desc[descKey])
+                    });
+                }
+            }
+            this.addTooltipHtml(elementId, this.format_block('jstpl_hogwarts_card_tooltip', {
+                cardName: cardDesc.name,
+                description: description,
+                posX: -100 * cardDesc.cardNr,
+                posY: 100 * cardDesc.gameNr,
+            }));
+        },
+
+        textToIconSubstitute: function(text) {
+            if (!text) {
+                return '';
+            }
+            return dojo.string.substitute(text, {
+                influence_token: this.getIcon('influence'),
+                attack_token: this.getIcon('attack'),
+                health_icon: this.getIcon('health')
+            });
+        },
+
+        getIcon: function(type) {
+            switch (type) {
+                case 'influence': return '<div class="icon influence_icon"></div>';
+                case 'attack': return '<div class="icon attack_icon"></div>';
+                case 'health': return '<div class="icon health_icon"></div>';
+                case 'card': return '<div class="icon hand_cards_icon"></div>';
+                case 'onHand': return '<div class="icon on_hand_icon"></div>';
+                case 'onDiscard': return '<div class="icon on_discard_icon"></div>';
+                case 'onAcquire': return '<div class="icon on_acquire_icon"></div>';
+                case 'onDefeatVillain': return '<div class="icon on_defeat_villain_icon"></div>';
+            }
+        },
+
         checkActiveEffects: function(effects) {
             if (effects) {
                 // remove effects not in place anymore
@@ -379,31 +436,19 @@ function (dojo, declare) {
         },
 
         addActiveEffect: function(effect) {
-            let iconX = 0;
-            let iconY = 0;
-            switch (effect.effect_trigger) {
-                case 'onDefeatVillain':
-                    iconX = 30;
-                    iconY = 100;
-                    break;
-            }
-
             dojo.place(
               this.format_block('jstpl_active_effect', {
                   elementId: 'active_effect_' + effect.id,
                   effectId: effect.id,
                   effectName: effect.name,
-                  iconX: iconX,
-                  iconY: iconY,
+                  icon: this.getIcon(effect.effect_trigger),
               }), 'active_effects');
             this.visibleEffectIds.push(effect.id);
-            this.addTooltipHtml('active_effect_' + effect.id, this.format_block('jstpl_hogwarts_card_tooltip', {
-                cardName: effect.name
-            }));
+            this.addHogwartsCardTooltip('active_effect_' + effect.id, effect.source_card_id);
+
         },
 
         removeActiveEffect: function(effectId) {
-            this.removeTooltip('active_effect_' + effectId);
             dojo.destroy('active_effect_' + effectId);
             let idx = this.visibleEffectIds.indexOf(effectId);
             if (idx >= 0) {
@@ -577,6 +622,7 @@ function (dojo, declare) {
         notif_cardPlayed: function(notif) {
             this.acquirableHogwartsCards = notif.args.acquirable_hogwarts_cards;
             this.checkAcquirableHogwartsCards();
+            this.checkActiveEffects(notif.args.effects);
 
             if (this.player_id == notif.args.player_id) {
                 let cardElemId = 'hogwarts_card_' + notif.args.card_id + '_p' + notif.args.player_id;

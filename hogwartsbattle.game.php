@@ -23,6 +23,9 @@ require_once('hogwartsCards.php');
 
 class HogwartsBattle extends Table
 {
+    private static $TRIGGER_ON_HAND = 'onHand';
+    private static $TRIGGER_ON_DISCARD = 'onDiscard';
+    private static $TRIGGER_ON_ACQUIRE = 'onAcquire';
     private static $TRIGGER_ON_DEFEAT_VILLAIN = 'onDefeatVillain';
 
     private static $SOURCE_HOGWARTS_CARD = 'hogwartsCard';
@@ -157,6 +160,8 @@ class HogwartsBattle extends Table
 
         $result['active_player'] = self::getActivePlayerId();
 
+        $result['hogwarts_cards_descriptions'] = $this->hogwartsCardsLibrary->hogwartsCards;
+
         $result['hand'] = $this->getDeck($current_player_id)->getCardsInLocation('hand');
 
         $result['played_cards'] = $this->getDeck(self::getActivePlayerId())->getCardsInLocation('played');
@@ -204,8 +209,7 @@ class HogwartsBattle extends Table
 
         foreach ($players as $player_id => $player) {
             // Add hero name
-            $heroName = $this->getHeroName($player['hero_id']);
-            $players[$player_id]['hero_name'] = clienttranslate($heroName);
+            $players[$player_id]['hero_name'] = $this->getHeroName($player['hero_id']);
 
             // Add cards
             $players[$player_id]['hand_card_count'] = $this->getDeck($player_id)->countCardInLocation('hand');
@@ -217,12 +221,12 @@ class HogwartsBattle extends Table
     }
 
     function getActiveEffects() {
-        $sql = "SELECT effect_id id, effect_key, effect_trigger, effect_name name, effect_source source, effect_source_id source_id FROM effect";
+        $sql = "SELECT effect_id id, effect_key, effect_trigger, effect_name name, effect_source source, effect_source_id source_id, effect_source_card_id source_card_id FROM effect";
         return self::getCollectionFromDb($sql);
     }
 
-    function addEffect($effect_key, $effect_trigger, $name, $source, $source_id) {
-        self::DbQuery("INSERT INTO effect(effect_key, effect_trigger, effect_name, effect_source, effect_source_id) VALUES('$effect_key', '$effect_trigger', '$name', '$source', '$source_id');");
+    function addEffect($effect_key, $effect_trigger, $name, $source, $source_id, $source_card_id) {
+        self::DbQuery("INSERT INTO effect(effect_key, effect_trigger, effect_name, effect_source, effect_source_id, effect_source_card_id) VALUES('$effect_key', '$effect_trigger', '$name', '$source', '$source_id', '$source_card_id');");
     }
 
     function clearAllEffects() {
@@ -249,13 +253,13 @@ class HogwartsBattle extends Table
     function getHeroName($heroId) {
         switch ($heroId) {
             case HogwartsCards::$harryId:
-                return "Harry";
+                return clienttranslate("Harry");
             case HogwartsCards::$ronId:
-                return "Ron";
+                return clienttranslate("Ron");
             case HogwartsCards::$hermioneId:
-                return "Hermione";
+                return clienttranslate("Hermione");
             case HogwartsCards::$nevilleId:
-                return "Neville";
+                return clienttranslate("Neville");
         }
     }
 
@@ -268,19 +272,19 @@ class HogwartsBattle extends Table
     }
 
     function getLogsGainHealthIcon() {
-        return '<div class="health_icon"></div>';
+        return '<div class="icon health_icon"></div>';
     }
 
     function getLogsGainInfluenceIcon() {
-        return '<div class="influence_icon">';
+        return '<div class="icon influence_icon"></div>';
     }
 
     function getLogsGainAttackIcon() {
-        return '<div class="attack_icon"></div>';
+        return '<div class="icon attack_icon"></div>';
     }
 
     function getLogsDrawCardIcon() {
-        return '<div class="hand_cards_icon"></div>';
+        return '<div class="icon hand_cards_icon"></div>';
     }
 
 
@@ -337,7 +341,7 @@ class HogwartsBattle extends Table
 
         // Execute card
         $executionComplete = true;
-        $notif_log = '${player_name} plays ${card_name}';
+        $notif_log = clienttranslate('${player_name} plays ${card_name}');
         $notif_args = array(
             'i18n' => array ('card_name'),
             'player_name' => self::getActivePlayerName(),
@@ -350,16 +354,16 @@ class HogwartsBattle extends Table
             switch ($action) {
                 case '+1inf':
                     self::DbQuery("UPDATE player set player_influence = player_influence + 1 where player_id = " . $playerId);
-                    $notif_log .= ' and gains 1 ${influence_token}';
+                    $notif_log .= clienttranslate(' and gains 1 ${influence_token}');
                     $notif_args['influence_token'] = $this->getLogsGainInfluenceIcon();
                     break;
                 case '+1att':
                     self::DbQuery("UPDATE player set player_attack = player_attack + 1 where player_id = " . $playerId);
-                    $notif_log .= ' and gains 1 ${attack_token}.';
+                    $notif_log .= clienttranslate(' and gains 1 ${attack_token}.');
                     $notif_args['attack_token'] = $this->getLogsGainAttackIcon();
                     break;
-                case '+1inf_onDefVil_1x':
-                    $this->addEffect('+1inf', self::$TRIGGER_ON_DEFEAT_VILLAIN, $hogwartsCard->name, self::$SOURCE_HOGWARTS_CARD, $cardId);
+                case '+1inf_onDefVil':
+                    $this->addEffect('+1inf', self::$TRIGGER_ON_DEFEAT_VILLAIN, $hogwartsCard->name, self::$SOURCE_HOGWARTS_CARD, $cardId, $hogwartsCard->typeId);
                     $notif_args['influence_token'] = $this->getLogsGainInfluenceIcon();
                     break;
                 default:
@@ -372,9 +376,10 @@ class HogwartsBattle extends Table
             $deck->moveCard($cardId, 'played');
             $notif_args['players'] = $this->getPlayerStats();
             $notif_args['acquirable_hogwarts_cards'] = $this->getAcquirableHogwartsCards($playerId);
+            $notif_args['effects'] = $this->getActiveEffects();
             self::notifyAllPlayers(
                 'cardPlayed',
-                clienttranslate($notif_log),
+                $notif_log,
                 $notif_args
             );
             $this->gamestate->nextState('playCard'); // is this necessary?

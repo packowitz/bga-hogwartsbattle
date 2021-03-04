@@ -91,22 +91,29 @@
   var jstpl_player_board =
     '<div class="player_stats">\
         <div class="player_stat">${hero_name}</div>\
-        <div class="player_stat"><div class="health_icon" id="health_icon_p${id}"></div><span id="health_stat_p${id}">0</span></div>\
-        <div class="player_stat"><div class="attack_icon" id="attack_icon_p${id}"></div><span id="attack_stat_p${id}">0</span></div>\
-        <div class="player_stat"><div class="influence_icon" id="influence_icon_p${id}"></div><span id="influence_stat_p${id}">0</span></div>\
-        <div class="player_stat"><div class="hand_cards_icon" id="hand_cards_icon_p${id}"></div><span id="hand_cards_stat_p${id}">0</span></div>\
+        <div class="player_stat"><div class="icon health_icon" id="health_icon_p${id}"></div><span id="health_stat_p${id}">0</span></div>\
+        <div class="player_stat"><div class="icon attack_icon" id="attack_icon_p${id}"></div><span id="attack_stat_p${id}">0</span></div>\
+        <div class="player_stat"><div class="icon influence_icon" id="influence_icon_p${id}"></div><span id="influence_stat_p${id}">0</span></div>\
+        <div class="player_stat"><div class="icon hand_cards_icon" id="hand_cards_icon_p${id}"></div><span id="hand_cards_stat_p${id}">0</span></div>\
     </div>';
 
   var jstpl_hogwarts_card = '<div class="hogwarts_card" id="${elementId}" data-card-id="${cardId}" style="background-position: ${posX}% ${posY}%; position: absolute; top: 0; left: 0;"></div>';
 
   var jstpl_hogwarts_card_tooltip =
     '<div class="hogwarts_card_tooltip">\
-        <div>${cardName}</div>\
+        <h3>${cardName}</h3>\
+        <div class="separator_line" style="margin-bottom: 4px;"></div>\
+        ${description}\
+        <div class="hogwarts_card_large" style="margin: 4px; background-position: ${posX}% ${posY}%;"></div>\
     </div>';
+
+  var jstpl_tooltip_text = '<div style="display: flex; align-items: center; flex-wrap: wrap; max-width: 200px">${text}</div>';
+
+  var jstpl_tooltip_text_with_icon = '<div style="display: flex; align-items: center; max-width: 200px; border-top: 1px solid #888888; padding-top: 4px;"><div class="width: 20px;">${icon}</div><div style="flex-shrink: 1; flex-grow: 1;">${text}</div></div>';
 
   var jstpl_active_effect =
     '<div class="active_effect" id="${elementId}" data-effect-id="${effectId}">\
-        <div class="effect_icon" style="background-position: ${iconX}% ${iconY}%;"></div>\
+        ${icon}\
         <div>${effectName}</div>\
     </div>';
 

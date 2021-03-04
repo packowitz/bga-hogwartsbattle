@@ -79,48 +79,46 @@
     align-items: center;
 }
 
-.health_icon {
+.icon {
     width: 20px;
     height: 20px;
     display: inline-block;
     margin-right: 2px;
     background-image: url(img/sprites.png);
     background-size: 220px;
-    background-position-x: 50%;
     vertical-align: bottom;
+}
+
+.health_icon {
+    background-position: 50% 0;
 }
 
 .attack_icon {
-    width: 20px;
-    height: 20px;
-    display: inline-block;
-    margin-right: 2px;
-    background-image: url(img/sprites.png);
-    background-size: 220px;
-    background-position-x: 60%;
-    vertical-align: bottom;
+    background-position: 60% 0;
 }
 
 .influence_icon {
-    width: 20px;
-    height: 20px;
-    display: inline-block;
-    margin-right: 2px;
-    background-image: url(img/sprites.png);
-    background-size: 220px;
-    background-position-x: 70%;
-    vertical-align: bottom;
+    background-position: 70% 0;
 }
 
 .hand_cards_icon {
-    width: 20px;
-    height: 20px;
-    display: inline-block;
-    margin-right: 2px;
-    background-image: url(img/sprites.png);
-    background-size: 220px;
-    background-position-x: 80%;
-    vertical-align: bottom;
+    background-position: 80% 0;
+}
+
+.on_hand_icon {
+    background-position: 80% 0;
+}
+
+.on_discard_icon {
+    background-position: 0 100%;
+}
+
+.on_acquire_icon {
+    background-position: 80% 0;
+}
+
+.on_defeat_villain_icon {
+    background-position: 30% 100%;
 }
 
 .active_effects {
@@ -137,14 +135,16 @@
     background-color: #d3bf9a;
 }
 
-.effect_icon {
-    width: 20px;
-    height: 20px;
-    display: inline-block;
-    margin-right: 2px;
-    background-image: url(img/sprites.png);
-    background-size: 220px;
-    vertical-align: bottom;
+.hogwarts_card_tooltip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.separator_line {
+    width: 100%;
+    height: 2px;
+    background-color: #888888;
 }
 
 .player_board {
@@ -177,6 +177,14 @@
     height: 140px;
     background-image: url('img/hogwarts_cards.png');
     background-size: 1600px;
+    filter: drop-shadow(2px 2px 2px #444);
+}
+
+.hogwarts_card_large {
+    width: 200px;
+    height: 280px;
+    background-image: url('img/hogwarts_cards.png');
+    background-size: 3200px;
     filter: drop-shadow(2px 2px 2px #444);
 }
 
