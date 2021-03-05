@@ -66,6 +66,15 @@ $machinestates = array(
         "description" => "",
         "type" => "game",
         "action" => "stInitTurn",
+        "args" => "argInitTurnEffects",
+        "transitions" => array("" => 11)
+    ),
+    11 => array(
+        "name" => "initTurnEffects",
+        "description" => "",
+        "type" => "game",
+        "action" => "stInitTurnEffects",
+        "args" => "argInitTurnEffects",
         "transitions" => array("" => 19)
     ),
     19 => array(
@@ -119,7 +128,7 @@ $machinestates = array(
         "description" => "",
         "type" => "game",
         "action" => "stCleanEffectsNextPlayer",
-        "transitions" => array("" => 20)
+        "transitions" => array("" => 10)
     ),
 
     /*

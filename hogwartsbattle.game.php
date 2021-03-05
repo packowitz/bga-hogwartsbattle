@@ -27,6 +27,7 @@ class HogwartsBattle extends Table
     private static $TRIGGER_ON_DISCARD = 'onDiscard';
     private static $TRIGGER_ON_ACQUIRE = 'onAcquire';
     private static $TRIGGER_ON_DEFEAT_VILLAIN = 'onDefeatVillain';
+    private static $TRIGGER_ON_DMG_DARK_ARTS_OR_VIALLAIN = 'onDmgDarkArtsOrVillain';
 
     private static $SOURCE_HOGWARTS_CARD = 'hogwartsCard';
 
@@ -439,6 +440,10 @@ class HogwartsBattle extends Table
     }    
     */
 
+    function argInitTurnEffects() {
+        return $this->getActiveEffects();
+    }
+
     function argChooseCardOption() {
         $cardId = self::getGameStateValue('played_card_id');
         $card = self::getDeck(self::getActivePlayerId())->getCard($cardId);
@@ -484,8 +489,29 @@ class HogwartsBattle extends Table
 
     function stInitTurn() {
 
-        // TODO check handCards->onHand, villains and horcrux effects
+        // check hand cards for onHand effects
+        $playerHeroes = self::getCollectionFromDB("SELECT player_id id, player_hero heroId FROM player", true);
+        foreach ($playerHeroes as $player_id => $heroId) {
+            $handCards = $this->heroDecks[$heroId]->getCardsInLocation('hand');
+            foreach ($handCards as $cardId => $card) {
+                $hogwartsCard = $this->hogwartsCardsLibrary->getCard($card['type'], $card['type_arg']);
+                foreach ($hogwartsCard->onHand as $onHandEffect) {
+                    switch ($onHandEffect) {
+                        case 'max1dmg':
+                            $this->addEffect('max1dmg', self::$TRIGGER_ON_DMG_DARK_ARTS_OR_VIALLAIN, $this->getHeroName($heroId), self::$SOURCE_HOGWARTS_CARD, $cardId, $hogwartsCard->typeId);
+                            break;
+                    }
+                }
+            }
+        }
 
+        // TODO check villains and horcrux effects
+
+        $this->gamestate->nextState();
+    }
+
+    function stInitTurnEffects() {
+        // nothing to do here. Meaning of this step is to get the args method called to have the current effects visible in the ui
         $this->gamestate->nextState();
     }
 
@@ -527,6 +553,18 @@ class HogwartsBattle extends Table
                     $notif_log .= clienttranslate(' and gains 1 ${attack_token}.');
                     $notif_args['attack_token'] = $this->getLogsGainAttackIcon();
                     break;
+                case '+1att_xAllyPlayed':
+                    $attack = 0;
+                    foreach ($deck->getCardsInLocation('played') as $playedCardId => $playedCard) {
+                        if ($this->hogwartsCardsLibrary->getCard($card['type'], $card['type_arg'])->type == HogwartsCards::$allyType) {
+                            $attack ++;
+                        }
+                    }
+                    $this->gainAttack($playerId, $attack);
+                    $notif_log .= clienttranslate(' and gains ${attack} ${attack_token}.');
+                    $notif_args['attack'] = $attack;
+                    $notif_args['attack_token'] = $this->getLogsGainAttackIcon();
+                    break;
                 case '+1inf_onDefVil':
                     $this->addEffect('+1inf', self::$TRIGGER_ON_DEFEAT_VILLAIN, $hogwartsCard->name, self::$SOURCE_HOGWARTS_CARD, $cardId, $hogwartsCard->typeId);
                     $notif_args['influence_token'] = $this->getLogsGainInfluenceIcon();
@@ -542,7 +580,8 @@ class HogwartsBattle extends Table
                     } else {
                         $healing = min(array(10 - $this->getHealth($playerId), 2));
                         $this->gainHealth($playerId, $healing);
-                        $notif_log .= clienttranslate(' and gains 2 ${health_icon}.');
+                        $notif_log .= clienttranslate(' and gains ${healing} ${health_icon}.');
+                        $notif_args['healing'] = $healing;
                         $notif_args['health_icon'] = $this->getLogsGainHealthIcon();
                     }
                     break;
@@ -573,8 +612,9 @@ class HogwartsBattle extends Table
                     } else {
                         $healing = min(array(10 - $this->getHealthByHeroId($option), 2));
                         $this->gainHealthByHeroId($option, $healing);
-                        $notif_log .= clienttranslate(' and ${hero_name} gains 2 ${health_icon}.');
+                        $notif_log .= clienttranslate(' and ${hero_name} gains ${healing} ${health_icon}.');
                         $notif_args['hero_name'] = $this->getHeroName($option);
+                        $notif_args['healing'] = $healing;
                         $notif_args['health_icon'] = $this->getLogsGainHealthIcon();
                     }
                     break;

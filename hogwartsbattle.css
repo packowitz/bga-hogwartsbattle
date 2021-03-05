@@ -121,6 +121,10 @@
     background-position: 30% 100%;
 }
 
+.on_loose_health_icon {
+    background-position: 40% 100%;
+}
+
 .active_effects {
     display: flex;
     align-items: center;

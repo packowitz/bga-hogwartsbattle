@@ -158,6 +158,14 @@ function (dojo, declare) {
             console.log('Entering state: ' + stateName);
 
             switch (stateName) {
+                case 'initTurnEffects': {
+                    console.log(args);
+                    for (let idx in args.args) {
+                        let effect = args.args[idx];
+                        this.addActiveEffect(effect);
+                    }
+                    break;
+                }
                 case 'playerTurn': {
                     if (this.isCurrentPlayerActive()) {
                         this.extractCards(this.playerHand).forEach(card => {
@@ -232,8 +240,6 @@ function (dojo, declare) {
                         break;
                     }
                     case 'chooseCardOption': {
-                        console.log('args: ');
-                        console.log(args);
                         for (let option in args) {
                             let optId = option.substr('option_'.length);
                             this.addActionButton(option, args[option], (evt) => { this.onDecideOnPlayHandCard(evt, optId); });
@@ -417,6 +423,7 @@ function (dojo, declare) {
                 case 'onDiscard': return '<div class="icon on_discard_icon"></div>';
                 case 'onAcquire': return '<div class="icon on_acquire_icon"></div>';
                 case 'onDefeatVillain': return '<div class="icon on_defeat_villain_icon"></div>';
+                case 'onDmgDarkArtsOrVillain': return '<div class="icon on_loose_health_icon"></div>';
             }
         },
 
