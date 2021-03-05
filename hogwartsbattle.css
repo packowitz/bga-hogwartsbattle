@@ -133,6 +133,7 @@
 .active_effect {
     display: flex;
     align-items: center;
+    margin-right: 5px;
     border: 2px solid black;
     border-radius: 10px;
     padding: 3px;

@@ -284,6 +284,10 @@ class HogwartsBattle extends Table
         return self::getUniqueValueFromDB("SELECT player_health FROM player where player_hero = " . $heroId);
     }
 
+    function getAllPlayerHealth() {
+        return self::getUniqueValueFromDB("SELECT player_id id, player_health health FROM player");
+    }
+
     function gainInfluence($playerId, $gain) {
         self::DbQuery("UPDATE player set player_influence = player_influence + ${gain} where player_id = ${playerId}");
     }
@@ -401,6 +405,7 @@ class HogwartsBattle extends Table
                 'i18n' => array ('card_name'),
                 'players' => $this->getPlayerStats(),
                 'acquired_card' => $deck->getCard($newCardId),
+                'acquirable_hogwarts_cards' => $this->getAcquirableHogwartsCards($playerId),
                 'card_id' => $cardId,
                 'new_card_id' => $newCardId,
                 'player_id' => $playerId,
@@ -548,9 +553,19 @@ class HogwartsBattle extends Table
                     $notif_log .= clienttranslate(' and gains 1 ${influence_token}');
                     $notif_args['influence_token'] = $this->getLogsGainInfluenceIcon();
                     break;
+                case '+2inf':
+                    $this->gainInfluence($playerId, 2);
+                    $notif_log .= clienttranslate(' and gains 2 ${influence_token}');
+                    $notif_args['influence_token'] = $this->getLogsGainInfluenceIcon();
+                    break;
                 case '+1att':
                     $this->gainAttack($playerId, 1);
-                    $notif_log .= clienttranslate(' and gains 1 ${attack_token}.');
+                    $notif_log .= clienttranslate(' and gains 1 ${attack_token}');
+                    $notif_args['attack_token'] = $this->getLogsGainAttackIcon();
+                    break;
+                case '+2att':
+                    $this->gainAttack($playerId, 2);
+                    $notif_log .= clienttranslate(' and gains 2 ${attack_token}');
                     $notif_args['attack_token'] = $this->getLogsGainAttackIcon();
                     break;
                 case '+1att_xAllyPlayed':
@@ -561,13 +576,42 @@ class HogwartsBattle extends Table
                         }
                     }
                     $this->gainAttack($playerId, $attack);
-                    $notif_log .= clienttranslate(' and gains ${attack} ${attack_token}.');
+                    $notif_log .= clienttranslate(' and gains ${attack} ${attack_token}');
                     $notif_args['attack'] = $attack;
                     $notif_args['attack_token'] = $this->getLogsGainAttackIcon();
                     break;
-                case '+1inf_onDefVil':
-                    $this->addEffect('+1inf', self::$TRIGGER_ON_DEFEAT_VILLAIN, $hogwartsCard->name, self::$SOURCE_HOGWARTS_CARD, $cardId, $hogwartsCard->typeId);
-                    $notif_args['influence_token'] = $this->getLogsGainInfluenceIcon();
+                case '+1hp_all':
+                    foreach ($this->getAllPlayerHealth() as $pId => $pInfo) {
+                        $healing = min(array(10 - $pInfo['health'], 1));
+                        $this->gainHealth($pId, $healing);
+                    }
+                    $notif_log .= clienttranslate(' and ALL Heroes gain 1 ${health_icon}');
+                    $notif_args['health_icon'] = $this->getLogsGainHealthIcon();
+                    break;
+                case '+1card':
+                    $newHandCards = $deck->pickCards(1, 'deck', $playerId);
+                    self::notifyPlayer($playerId, 'refillHandCards', '', array('new_hand_cards' => $newHandCards));
+                    $notif_log .= clienttranslate(' and draws a card');
+                    break;
+                case '+1card_all':
+                    foreach (self::loadPlayersBasicInfos() as $pId => $info) {
+                        $newHandCards = $this->getDeck($pId)->pickCards(1, 'deck', $pId);
+                        self::notifyPlayer($pId, 'refillHandCards', '', array('new_hand_cards' => $newHandCards));
+                    }
+                    $notif_log .= clienttranslate(' and ALL Heroes draw a card');
+                    break;
+                case 'c[+2hp_any]':
+                    $option = self::getGameStateValue('play_card_option');
+                    if ($option == 0) {
+                        $executionComplete = false;
+                    } else {
+                        $healing = min(array(10 - $this->getHealthByHeroId($option), 2));
+                        $this->gainHealthByHeroId($option, $healing);
+                        $notif_log .= clienttranslate(' and ${hero_name} gains ${healing} ${health_icon}');
+                        $notif_args['hero_name'] = $this->getHeroName($option);
+                        $notif_args['healing'] = $healing;
+                        $notif_args['health_icon'] = $this->getLogsGainHealthIcon();
+                    }
                     break;
                 case 'c[+1att|+2hp]':
                     $option = self::getGameStateValue('play_card_option');
@@ -575,12 +619,12 @@ class HogwartsBattle extends Table
                         $executionComplete = false;
                     } else if ($option == 1) {
                         $this->gainAttack($playerId, 1);
-                        $notif_log .= clienttranslate(' and gains 1 ${attack_token}.');
+                        $notif_log .= clienttranslate(' and gains 1 ${attack_token}');
                         $notif_args['attack_token'] = $this->getLogsGainAttackIcon();
                     } else {
                         $healing = min(array(10 - $this->getHealth($playerId), 2));
                         $this->gainHealth($playerId, $healing);
-                        $notif_log .= clienttranslate(' and gains ${healing} ${health_icon}.');
+                        $notif_log .= clienttranslate(' and gains ${healing} ${health_icon}');
                         $notif_args['healing'] = $healing;
                         $notif_args['health_icon'] = $this->getLogsGainHealthIcon();
                     }
@@ -590,14 +634,14 @@ class HogwartsBattle extends Table
                     if ($option == 0) {
                         $executionComplete = false;
                     } else if ($option == 1) {
-                        $this->gainInfluence($playerId, 1);
-                        $notif_log .= clienttranslate(' and gains 1 ${influence_token}.');
+                        $this->gainInfluence($playerId, 2);
+                        $notif_log .= clienttranslate(' and gains 2 ${influence_token}');
                         $notif_args['influence_token'] = $this->getLogsGainInfluenceIcon();
                     } else {
                         foreach (self::loadPlayersBasicInfos() as $pId => $info) {
                             $this->gainInfluence($pId, 1);
                         }
-                        $notif_log .= clienttranslate(' and ALL Heroes gain 1 ${influence_token}.');
+                        $notif_log .= clienttranslate(' and ALL Heroes gain 1 ${influence_token}');
                         $notif_args['influence_token'] = $this->getLogsGainInfluenceIcon();
                     }
                     break;
@@ -607,16 +651,28 @@ class HogwartsBattle extends Table
                         $executionComplete = false;
                     } else if ($option == 9) {
                         $this->gainAttack($playerId, 1);
-                        $notif_log .= clienttranslate(' and gains 1 ${attack_token}.');
+                        $notif_log .= clienttranslate(' and gains 1 ${attack_token}');
                         $notif_args['attack_token'] = $this->getLogsGainAttackIcon();
                     } else {
                         $healing = min(array(10 - $this->getHealthByHeroId($option), 2));
                         $this->gainHealthByHeroId($option, $healing);
-                        $notif_log .= clienttranslate(' and ${hero_name} gains ${healing} ${health_icon}.');
+                        $notif_log .= clienttranslate(' and ${hero_name} gains ${healing} ${health_icon}');
                         $notif_args['hero_name'] = $this->getHeroName($option);
                         $notif_args['healing'] = $healing;
                         $notif_args['health_icon'] = $this->getLogsGainHealthIcon();
                     }
+                    break;
+                case '+1inf_onDefVil':
+                    $this->addEffect('+1inf', self::$TRIGGER_ON_DEFEAT_VILLAIN, $hogwartsCard->name, self::$SOURCE_HOGWARTS_CARD, $cardId, $hogwartsCard->typeId);
+                    break;
+                case 'spells_top_deck':
+                    $this->addEffect('spells_top_deck', self::$TRIGGER_ON_ACQUIRE, $hogwartsCard->name, self::$SOURCE_HOGWARTS_CARD, $cardId, $hogwartsCard->typeId);
+                    break;
+                case 'items_top_deck':
+                    $this->addEffect('items_top_deck', self::$TRIGGER_ON_ACQUIRE, $hogwartsCard->name, self::$SOURCE_HOGWARTS_CARD, $cardId, $hogwartsCard->typeId);
+                    break;
+                case 'allies_on_top':
+                    $this->addEffect('allies_on_top', self::$TRIGGER_ON_ACQUIRE, $hogwartsCard->name, self::$SOURCE_HOGWARTS_CARD, $cardId, $hogwartsCard->typeId);
                     break;
                 default:
                     $notif_log .= ' Oh no, this action is not implemented yet. (' . $action . ')';

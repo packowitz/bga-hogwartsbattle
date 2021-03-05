@@ -682,6 +682,9 @@ function (dojo, declare) {
             dojo.setAttr(cardElem, 'id', newElemId);
             dojo.setAttr(cardElem, 'data-card-id', notif.args.new_card_id);
             this.discard_piles[notif.args.player_id].placeInZone(newElemId);
+
+            // update player stats with timeout to make sure the acquired card is in discard pile
+            setTimeout(() => this.updatePlayerStats(notif.args.players), 1000);
         },
    });
 });

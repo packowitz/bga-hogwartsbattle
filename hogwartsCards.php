@@ -103,7 +103,7 @@ class HogwartsCards {
             104 => new HogwartsCard(1, 4, clienttranslate('Descendo'), 5, self::$spellType, array('+2att'), array(), array(),
                 array('onPlay' => clienttranslate('Gain 2 ${attack_token}.'))),
 
-            105 => new HogwartsCard(1, 5, clienttranslate('Essence of Dittany'), 2, self::$itemType, array('+2hp_any'), array(), array(),
+            105 => new HogwartsCard(1, 5, clienttranslate('Essence of Dittany'), 2, self::$itemType, array('c[+2hp_any]'), array(), array(),
                 array('onPlay' => clienttranslate('Any one Hero gains 2 ${health_icon}'))),
 
             106 => new HogwartsCard(1, 6, clienttranslate('Quidditch Gear'), 3, self::$itemType, array('+1att', '+1hp'), array(), array(),
@@ -115,7 +115,7 @@ class HogwartsCards {
             108 => new HogwartsCard(1, 8, clienttranslate('Golden Snitch'), 5, self::$itemType, array('+2inf', '+1card'), array(), array(),
                 array('onPlay' => clienttranslate('Gain 2 ${influence_token} and draw a card.'))),
 
-            109 => new HogwartsCard(1, 9, clienttranslate('Oliver Wood'), 3, self::$allyType, array('+1att', '+2hp_any_onDefVil'), array(), array(),
+            109 => new HogwartsCard(1, 9, clienttranslate('Oliver Wood'), 3, self::$allyType, array('+1att', 'c[+2hp_any_onDefVil]'), array(), array(),
                 array('onPlay' => clienttranslate('Gain 1 ${attack_token}.'), 'onDefeatVillain' => clienttranslate('If you defeat a Villain, also any one Hero gains 2 ${health_icon}.'))),
 
             110 => new HogwartsCard(1, 10, clienttranslate('Rubeus Hagrid'), 4, self::$allyType, array('+1att', '+1hp_all'), array(), array(),
