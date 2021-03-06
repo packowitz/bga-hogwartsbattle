@@ -97,7 +97,7 @@
         <div class="player_stat"><div class="icon hand_cards_icon" id="hand_cards_icon_p${id}"></div><span id="hand_cards_stat_p${id}">0</span></div>\
     </div>';
 
-  var jstpl_hogwarts_card = '<div class="hogwarts_card" id="${elementId}" data-card-id="${cardId}" style="background-position: ${posX}% ${posY}%; position: absolute; top: 0; left: 0;"></div>';
+  var jstpl_hogwarts_card = '<div class="hogwarts_card" id="${elementId}" data-card-id="${cardId}" data-card-type-id="${cardTypeId}" style="background-position: ${posX}% ${posY}%; position: absolute; top: 0; left: 0;"></div>';
 
   var jstpl_hogwarts_card_tooltip =
     '<div class="hogwarts_card_tooltip">\

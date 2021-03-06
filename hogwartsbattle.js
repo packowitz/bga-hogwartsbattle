@@ -326,6 +326,7 @@ function (dojo, declare) {
               this.format_block( 'jstpl_hogwarts_card', {
                   elementId: elementId,
                   cardId: card.id,
+                  cardTypeId: cardTypeId,
                   posX: -100 * cardNr,
                   posY: 100 * gameNr,
               }), zoneElemId);
@@ -381,8 +382,6 @@ function (dojo, declare) {
 
         addHogwartsCardTooltip: function(elementId, typeId) {
             let cardDesc = this.hogwartsCardDescriptions[typeId];
-            //console.log('Show hogwarts tooltip');
-            //console.log(cardDesc);
             let description = this.format_block('jstpl_tooltip_text', {
                 text: this.textToIconSubstitute(cardDesc.desc['onPlay'])
             });
@@ -654,9 +653,11 @@ function (dojo, declare) {
             if (this.player_id == notif.args.player_id) {
                 let cardElemId = 'hogwarts_card_' + notif.args.card_id + '_p' + notif.args.player_id;
                 this.playerHand.removeFromZone(cardElemId);
-                dojo.removeClass(dojo.byId(cardElemId), 'can_play');
+                let cardNode = dojo.byId(cardElemId);
+                dojo.removeClass(cardNode, 'can_play');
                 this.disconnect( $(cardElemId), 'onclick');
                 this.playedCards.placeInZone(cardElemId);
+                this.addHogwartsCardTooltip(cardElemId, parseInt(cardNode.dataset.cardTypeId));
             } else {
                 this.placeHogwartsCard(notif.args.card_played, this.playedCards, 'overall_player_board_' + notif.args.player_id, notif.args.player_id);
             }
@@ -682,6 +683,7 @@ function (dojo, declare) {
             dojo.setAttr(cardElem, 'id', newElemId);
             dojo.setAttr(cardElem, 'data-card-id', notif.args.new_card_id);
             this.discard_piles[notif.args.player_id].placeInZone(newElemId);
+            this.addHogwartsCardTooltip(newElemId, parseInt(cardElem.dataset.cardTypeId));
 
             // update player stats with timeout to make sure the acquired card is in discard pile
             setTimeout(() => this.updatePlayerStats(notif.args.players), 1000);
