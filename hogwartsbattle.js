@@ -36,6 +36,17 @@ function (dojo, declare) {
 
             this.hogwartsCardDescriptions = {};
 
+            this.gameNr = 0;
+            this.locationTotal = 0;
+            this.locationNr = 0;
+            this.location_counter = {};
+            this.locationMarkerTotal = 0;
+            this.locationMarker = 0;
+            this.location_marker_counter = {};
+
+            this.villainsLeft = 0;
+            this.villainCounter = {};
+
             this.discard_piles = {};
 
             this.acquirableHogwartsCards = [];
@@ -68,7 +79,45 @@ function (dojo, declare) {
             console.log( "Starting game setup" );
 
             this.hogwartsCardDescriptions = gamedatas.hogwarts_cards_descriptions;
-            
+            this.gameNr = gamedatas.game_number;
+
+            this.locationTotal = gamedatas.location_total;
+            $('location_total').innerHTML = this.locationTotal;
+
+            this.locationNr = gamedatas.location_number;
+            this.location_counter = new ebg.counter();
+            this.location_counter.create('location_number');
+            this.location_counter.setValue(this.locationNr);
+
+            this.locationMarkerTotal = gamedatas.location_marker_total;
+            $('location_marker_total').innerHTML = this.locationMarkerTotal;
+
+            this.locationMarker = gamedatas.location_marker;
+            this.location_marker_counter = new ebg.counter();
+            this.location_marker_counter.create('location_marker');
+            this.location_marker_counter.setValue(this.locationMarker);
+
+            dojo.place(
+              this.format_block( 'jstpl_location', {
+                  elementId: 'location_image_' + this.locationNr,
+                  posX: (this.locationNr - 1) * 187.5,
+                  posY: (this.gameNr - 1) * 140,
+              }), 'location_image');
+            // let locationElem = dojo.byId('location_image');
+            // dojo.style(locationElem, 'background-position', (this.locationNr - 1) * 187.5 + 'px ' + (this.gameNr - 1) * 140 + 'px');
+
+            this.villainsLeft = 0;
+            this.villainCounter = new ebg.counter();
+            this.villainCounter.create('villain_counter');
+            this.villainCounter.setValue(this.villainsLeft);
+
+            let villainDeckElem = dojo.byId('villain_deck');
+            if (this.villainsLeft == 0) {
+                dojo.removeClass(villainDeckElem, 'villain_back');
+                dojo.addClass(villainDeckElem, 'villain_back_empty');
+            }
+
+
             // Setting up player boards
             for(var player_id in gamedatas.players)
             {
@@ -387,8 +436,7 @@ function (dojo, declare) {
             });
             for (var descKey in cardDesc.desc) {
                 if (descKey != 'onPlay') {
-                    description += this.format_block('jstpl_tooltip_text_with_icon', {
-                        icon: this.getIcon(descKey),
+                    description += this.format_block('jstpl_tooltip_text', {
                         text: this.textToIconSubstitute(cardDesc.desc[descKey])
                     });
                 }

@@ -79,6 +79,23 @@
     align-items: center;
 }
 
+.hogwarts_background {
+    background-image: url(img/play_background.png);
+    background-size: auto 100%;
+}
+
+.default_background {
+    background-image: url(img/background.png);
+}
+
+.villain_background {
+    background-image: url(img/villain_background.png);
+}
+
+.big_card_wrapper {
+    width: 200px;
+}
+
 .icon {
     width: 18px;
     height: 18px;
@@ -103,6 +120,10 @@
 
 .hand_cards_icon {
     background-position: 80% 0;
+}
+
+.location_icon {
+    background-position: 0 0;
 }
 
 .on_hand_icon {
@@ -193,6 +214,29 @@
     filter: drop-shadow(2px 2px 2px #444);
 }
 
+.location_card {
+    width: 200px;
+    height: 150px;
+    background-image: url(img/locations.png);
+    background-size: 400px;
+    filter: drop-shadow(2px 2px 2px #444);
+}
+
+.villain_back {
+    width: 200px;
+    height: 150px;
+    background-image: url(img/villain_back.png);
+    background-size: 200px;
+    filter: drop-shadow(2px 2px 2px #444);
+}
+
+.villain_back_empty {
+    width: 200px;
+    height: 150px;
+    background-image: url(img/villain_background.png);
+    background-size: 200px;
+}
+
 .acquired_hogwarts_card {
     position: absolute;
 }
@@ -203,6 +247,12 @@
 
 .game_board {
     display: flex;
+}
+
+.flex-space-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .flex-grow {

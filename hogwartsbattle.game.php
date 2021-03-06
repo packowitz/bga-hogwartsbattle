@@ -44,13 +44,11 @@ class HogwartsBattle extends Table
         self::initGameStateLabels( array(
             'played_card_id' => 10,
             'play_card_option' => 11,
-            //    "location_markers" => 10,
-            //    "location_markers_max" => 11,
-            //    "villain_slots" => 12,
-            //      ...
-            //    "my_first_game_variant" => 100,
-            //    "my_second_game_variant" => 101,
-            //      ...
+
+            'game_number' => 20,
+            'location_total' => 21,
+            'location_number' => 22,
+            'location_marker' => 23,
         ) );
 
         $this->hogwartsCardsLibrary = new HogwartsCards();
@@ -132,6 +130,11 @@ class HogwartsBattle extends Table
         self::setGameStateInitialValue('played_card_id', 0);
         self::setGameStateInitialValue('play_card_option', 0);
 
+        self::setGameStateInitialValue('game_number', 1); // Comes from game options
+        self::setGameStateInitialValue('location_total', 2); // Comes from chosen game number
+        self::setGameStateInitialValue('location_number', 1);
+        self::setGameStateInitialValue('location_marker', 0);
+
         // Init game statistics
         // (note: statistics used in this file must be defined in your stats.inc.php file)
         //self::initStat( 'table', 'table_teststat1', 0 );    // Init a table statistics
@@ -159,6 +162,16 @@ class HogwartsBattle extends Table
     
         $current_player_id = self::getCurrentPlayerId();    // !! We must only return informations visible by this player !!
         $isActivePlayer = $current_player_id == self::getActivePlayerId();
+
+        $result['game_number'] = self::getGameStateValue('game_number');
+
+        $result['location_total'] = self::getGameStateValue('location_total');
+
+        $result['location_number'] = self::getGameStateValue('location_number');
+
+        $result['location_marker_total'] = $this->getLocationMaxToken();
+
+        $result['location_marker'] = self::getGameStateValue('location_marker');
 
         $result['players'] = self::getPlayerStats();
 
@@ -306,6 +319,10 @@ class HogwartsBattle extends Table
 
     function getDeck($playerId) {
         return $this->heroDecks[$this->getHeroId($playerId)];
+    }
+
+    function getLocationMaxToken() {
+        return $this->locations[self::getGameStateValue('game_number')][self::getGameStateValue('location_number')]['max_tokens'];
     }
 
     function getLogsGainHealthIcon() {

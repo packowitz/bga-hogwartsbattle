@@ -19,7 +19,12 @@
  *
  */
 
-
+$this->locations = array(
+    1 => array(
+        1 => array('max_tokens' => 4),
+        2 => array('max_tokens' => 4)
+    )
+);
 /*
 
 Example:

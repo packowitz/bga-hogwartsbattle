@@ -26,7 +26,7 @@
 -->
 
 
-<div class="whiteblock">
+<div class="whiteblock hogwarts_background">
     <div class="player_board">
         <div class="player_board_part" style="flex-grow: 1;">
             <h3>{MY_HAND}</h3>
@@ -40,26 +40,42 @@
 
 <div class="game_board">
     <div class="flex-grow">
-        <div class="whiteblock">
+        <div class="whiteblock default_background">
             <div id="active_effects" class="active_effects">
                 <h3 style="margin-right: 5px;">{EFFECTS}</h3>
             </div>
         </div>
-        <div id="played_cards_wrapper" class="whiteblock">
+        <div id="played_cards_wrapper" class="whiteblock hogwarts_background">
             <h3>{BOARD}</h3>
             <div class="card_height">
                 <div id="played_cards"></div>
             </div>
         </div>
-        <div id="dark_arts_events_wrapper" class="whiteblock" style="display: none;">
+        <div id="dark_arts_events_wrapper" class="whiteblock hogwarts_background" style="display: none;">
             <h3>{DARK_ARTS}</h3>
             <div class="card_height">
                 <div id="dark_arts_events"></div>
             </div>
         </div>
+        <div style="display: flex;">
+            <div class="whiteblock default_background big_card_wrapper" style="margin-right: 20px;">
+                <h3 class="full-width flex-space-between">
+                    <div>{LOCATION} <span id="location_number"></span>/<span id="location_total"></span></div>
+                    <div><div class="icon location_icon"></div><span id="location_marker"></span>/<span id="location_marker_total"></span></div>
+                </h3>
+                <div id="location_image"></div>
+            </div>
+            <div class="whiteblock default_background big_card_wrapper">
+                <h3 class="flex-space-between">
+                    <div>{VILLAIN_CARDS}</div>
+                    <div id="villain_counter"></div>
+                </h3>
+                <div id="villain_deck" class="villain_back"></div>
+            </div>
+        </div>
     </div>
 
-    <div class="whiteblock revealed_hogwarts_cards">
+    <div class="whiteblock revealed_hogwarts_cards default_background">
         <h3>{HOGWARTS_CARDS}</h3>
         <div id="acquired_hogwarts_card" class="acquired_hogwarts_card"></div>
         <div id="hogwarts_cards"></div>
@@ -107,15 +123,15 @@
         <div class="hogwarts_card_large" style="margin: 4px; background-position: ${posX}% ${posY}%;"></div>\
     </div>';
 
-  var jstpl_tooltip_text = '<div style="display: flex; align-items: center; flex-wrap: wrap; max-width: 200px">${text}</div>';
-
-  var jstpl_tooltip_text_with_icon = '<div style="display: flex; align-items: center; max-width: 200px; border-top: 1px solid #888888; padding-top: 4px;"><div class="width: 20px;">${icon}</div><div style="flex-shrink: 1; flex-grow: 1;">${text}</div></div>';
+  var jstpl_tooltip_text = '<div style="display: flex; align-items: center; flex-wrap: wrap; max-width: 200px; margin-top: 4px;"><div>${text}</div></div>';
 
   var jstpl_active_effect =
     '<div class="active_effect" id="${elementId}" data-effect-id="${effectId}">\
         ${icon}\
         <div>${effectName}</div>\
     </div>';
+
+  var jstpl_location = '<div id="${elementId}" class="location_card" style="background-position: ${posX}px ${posY}px;"></div>';
 
 </script>
 
