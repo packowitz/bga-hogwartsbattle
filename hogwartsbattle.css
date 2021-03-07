@@ -94,6 +94,8 @@
 
 .big_card_wrapper {
     width: 200px;
+    height: 175px;
+    margin-right: 20px;
 }
 
 .icon {
@@ -237,6 +239,25 @@
     background-size: 200px;
 }
 
+.active_villain_background {
+    width: 200px;
+    height: 256px;
+    background-image: url(img/active_villain_background.png);
+    background-size: 200px;
+}
+
+.active_villain {
+    width: 200px;
+    height: 150px;
+    background-image: url(img/villains.png);
+    background-size: 600px;
+}
+
+.active_hero_drop_zone {
+    margin-top: 10px;
+    height: 94px;
+}
+
 .acquired_hogwarts_card {
     position: absolute;
 }
@@ -259,10 +280,15 @@
     flex-grow: 1;
 }
 
-.revealed_hogwarts_cards {
+.revealed_hogwarts_cards_wrapper {
     margin-left: 20px;
     width: 220px;
     height: 460px;
+}
+
+.revealed_hogwarts_cards {
+    margin: 0 5px;
+    width: 210px;
 }
 
 .active_effects {
@@ -277,6 +303,12 @@
 
 .can_acquire {
     border-radius: 5px;
+    animation: pulse 1s infinite alternate;
+    cursor: pointer;
+}
+
+.can_attack {
+    border-radius: 15px;
     animation: pulse 1s infinite alternate;
     cursor: pointer;
 }

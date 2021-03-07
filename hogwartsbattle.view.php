@@ -58,6 +58,7 @@
         $this->tpl['DARK_ARTS'] = self::_("Dark Arts events");
         $this->tpl['LOCATION'] = self::_("Location");
         $this->tpl['VILLAIN_CARDS'] = self::_("Villain cards");
+        $this->tpl['ACTIVE_VILLAIN'] = self::_("Active villain");
 
         /*
         

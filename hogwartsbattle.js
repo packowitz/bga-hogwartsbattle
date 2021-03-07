@@ -44,21 +44,16 @@ function (dojo, declare) {
             this.locationMarker = 0;
             this.location_marker_counter = {};
 
+            this.villainsMax = 0;
             this.villainsLeft = 0;
             this.villainCounter = {};
+            this.villainDmgCounter = {};
+            this.villainDropZones = {};
 
             this.discard_piles = {};
 
             this.acquirableHogwartsCards = [];
             this.visibleEffectIds = [];
-
-            // this.handCardsZone = new ebg.zone();
-            // this.handCardsZone.create(this, 'myhand', 100, 140);
-            // this.handCardsZone.setPattern('horizontalfit');
-            //
-            // this.discardZone = new ebg.zone();
-            // this.discardZone.create(this, 'played_cards', 100, 140);
-            // this.discardZone.setPattern('verticalfit');
         },
         
         /*
@@ -103,10 +98,10 @@ function (dojo, declare) {
                   posX: (this.locationNr - 1) * 187.5,
                   posY: (this.gameNr - 1) * 140,
               }), 'location_image');
-            // let locationElem = dojo.byId('location_image');
-            // dojo.style(locationElem, 'background-position', (this.locationNr - 1) * 187.5 + 'px ' + (this.gameNr - 1) * 140 + 'px');
 
-            this.villainsLeft = 0;
+            // Villains
+            this.villainsMax = gamedatas.villains_max;
+            this.villainsLeft = gamedatas.villains_left;
             this.villainCounter = new ebg.counter();
             this.villainCounter.create('villain_counter');
             this.villainCounter.setValue(this.villainsLeft);
@@ -117,6 +112,25 @@ function (dojo, declare) {
                 dojo.addClass(villainDeckElem, 'villain_back_empty');
             }
 
+            for (let i = 1; i <= this.villainsMax; i++) {
+                dojo.place(
+                  this.format_block( 'jstpl_active_villain', {
+                      villainNr: i
+                  }), 'active_villains');
+                let villainCard = gamedatas['villain_' + i];
+                let dmg = gamedatas['villain_' + i + '_dmg'];
+                this.villainDmgCounter[i] = new ebg.counter();
+                this.villainDmgCounter[i].create('damage_counter_v' + i);
+                this.villainDmgCounter[i].setValue(dmg);
+
+                this.villainDropZones[i] = new ebg.zone();
+                this.villainDropZones[i].create(this, 'villain_drop_zone_v' + i, 15, 15);
+                this.villainDropZones[i].setPattern('ellipticalfit');
+
+                // TODO place dmg x attack tokens to drop zone
+
+                this.placeVillain(villainCard, i);
+            }
 
             // Setting up player boards
             for(var player_id in gamedatas.players)
@@ -159,13 +173,6 @@ function (dojo, declare) {
                 }
             }
             
-            // TODO: Set up your game interface here, according to "gamedatas"
-
-            var customStyle = document.createElement('style');
-            customStyle.type = 'text/css';
-            customStyle.innerHTML = `.card_size_50p { background-size: ${this.cardsPerRow * this.cardwidth * 0.5}px; }`;
-            document.getElementsByTagName('head')[0].appendChild(customStyle);
-
             // Hogwarts cards
             this.hogwartsCards = new ebg.zone();
             this.hogwartsCards.create(this, $('hogwarts_cards'), this.cardwidth * 0.5, this.cardheight * 0.5);
@@ -186,8 +193,6 @@ function (dojo, declare) {
             this.revealHogwartsCards(gamedatas.hogwarts_cards);
             this.drawHogwartsCards(gamedatas.hand);
             this.acquirableHogwartsCards = gamedatas.acquirable_hogwarts_cards;
-            console.log('acquirable hogwarts cards');
-            console.log(this.acquirableHogwartsCards);
             this.checkActiveEffects(gamedatas.effects);
 
             // Setup game notifications to handle (see "setupNotifications" method below)
@@ -381,6 +386,20 @@ function (dojo, declare) {
               }), zoneElemId);
             zone.placeInZone(elementId);
             this.addHogwartsCardTooltip(elementId, cardTypeId);
+        },
+
+        placeVillain: function(card, slot) {
+            let gameNr = parseInt(card.type);
+            let cardNr = parseInt(card.type_arg);
+            let villainId = (gameNr * 100) + cardNr;
+            dojo.place(
+              this.format_block( 'jstpl_active_villain_image', {
+                  elementId: 'villain_' + villainId,
+                  villainId: villainId,
+                  slot: slot,
+                  posX: -200 * cardNr,
+                  posY: 150 * gameNr,
+              }), 'active_villain_' + slot);
         },
 
         clearAcquirableHogwartsCards: function() {

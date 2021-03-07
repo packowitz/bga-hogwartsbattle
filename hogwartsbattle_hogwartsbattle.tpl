@@ -57,8 +57,8 @@
                 <div id="dark_arts_events"></div>
             </div>
         </div>
-        <div style="display: flex;">
-            <div class="whiteblock default_background big_card_wrapper" style="margin-right: 20px;">
+        <div style="display: flex; flex-wrap: wrap;">
+            <div class="whiteblock default_background big_card_wrapper">
                 <h3 class="full-width flex-space-between">
                     <div>{LOCATION} <span id="location_number"></span>/<span id="location_total"></span></div>
                     <div><div class="icon location_icon"></div><span id="location_marker"></span>/<span id="location_marker_total"></span></div>
@@ -72,13 +72,13 @@
                 </h3>
                 <div id="villain_deck" class="villain_back"></div>
             </div>
+            <div id="active_villains" style="display: flex;"></div>
         </div>
     </div>
 
-    <div class="whiteblock revealed_hogwarts_cards default_background">
+    <div class="whiteblock revealed_hogwarts_cards_wrapper default_background">
         <h3>{HOGWARTS_CARDS}</h3>
-        <div id="acquired_hogwarts_card" class="acquired_hogwarts_card"></div>
-        <div id="hogwarts_cards"></div>
+        <div id="hogwarts_cards" class="revealed_hogwarts_cards"></div>
     </div>
 </div>
 
@@ -132,6 +132,20 @@
     </div>';
 
   var jstpl_location = '<div id="${elementId}" class="location_card" style="background-position: ${posX}px ${posY}px;"></div>';
+
+  var jstpl_active_villain =
+    '<div class="whiteblock default_background big_card_wrapper" style="height: auto">\
+        <h3 class="flex-space-between">\
+            <div>{ACTIVE_VILLAIN} ${villainNr}</div>\
+            <div><div class="icon attack_icon"></div><span id="damage_counter_v${villainNr}"></span></div>\
+        </h3>\
+        <div class="active_villain_background">\
+            <div id="active_villain_${villainNr}"></div>\
+            <div id="villain_drop_zone_v${villainNr}" class="active_hero_drop_zone"></div>\
+        </div>\
+    </div>';
+
+  var jstpl_active_villain_image = '<div class="active_villain" id="${elementId}" data-villain-id="${villainId}" data-villain-slot="${slot}" style="background-position: ${posX}px ${posY}px;"></div>';
 
 </script>
 
