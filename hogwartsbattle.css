@@ -148,6 +148,16 @@
     background-position: 40% 100%;
 }
 
+.large_attack_icon {
+    width: 40px;
+    height: 40px;
+    display: inline-block;
+    margin-right: 2px;
+    background-image: url(img/sprites.png);
+    background-size: 440px;
+    background-position: -240px 0;
+}
+
 .active_effects {
     display: flex;
     align-items: center;
@@ -255,6 +265,7 @@
 
 .active_hero_drop_zone {
     margin-top: 10px;
+    width: 200px;
     height: 94px;
 }
 

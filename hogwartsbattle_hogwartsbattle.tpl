@@ -141,11 +141,13 @@
         </h3>\
         <div class="active_villain_background">\
             <div id="active_villain_${villainNr}"></div>\
-            <div id="villain_drop_zone_v${villainNr}" class="active_hero_drop_zone"></div>\
+            <div id="villain_drop_zone_v${villainNr}" data-villain-slot="${villainNr}" class="active_hero_drop_zone"></div>\
         </div>\
     </div>';
 
   var jstpl_active_villain_image = '<div class="active_villain" id="${elementId}" data-villain-id="${villainId}" data-villain-slot="${slot}" style="background-position: ${posX}px ${posY}px;"></div>';
+
+  var jstpl_villain_damage = '<div id="${elementId}" class="large_attack_icon" style="position: absolute; top: 0; left: 0;"></div>';
 
 </script>
 

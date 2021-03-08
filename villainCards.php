@@ -52,7 +52,7 @@ class VillainCards {
         return $cards;
     }
 
-    public function getCard($gameNr, $cardNr) {
+    public function getVillainCard($gameNr, $cardNr) {
         return $this->villainCards[self::cardId($gameNr, $cardNr)];
     }
 

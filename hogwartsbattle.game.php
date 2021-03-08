@@ -54,7 +54,7 @@ class HogwartsBattle extends Table
             'villains_max' => 30,
             'villain_1_dmg' => 31,
             'villain_2_dmg' => 32,
-            'villain_3_dmg' => 33,
+            'villain_3_dmg' => 33
         ) );
 
         $this->hogwartsCardsLibrary = new HogwartsCards();
@@ -221,6 +221,8 @@ class HogwartsBattle extends Table
             $result['acquirable_hogwarts_cards'] = $this->getAcquirableHogwartsCards($current_player_id);
         }
 
+        $result['villain_descriptions'] = $this->villainCardsLibrary->villainCards;
+
         $result['villains_max'] = self::getGameStateValue('villains_max');
         $result['villains_left'] = $this->villainCards->countCardInLocation('deck');
         $villain1 = $this->villainCards->getPlayerHand(1);
@@ -316,10 +318,6 @@ class HogwartsBattle extends Table
         return $cardIds;
     }
 
-    function getPlayerInfluence($playerId) {
-        return self::getUniqueValueFromDB('select player_influence from player where player_id = ' . $playerId);
-    }
-
     function getHeroName($heroId) {
         switch ($heroId) {
             case HogwartsCards::$harryId:
@@ -349,12 +347,24 @@ class HogwartsBattle extends Table
         return self::getUniqueValueFromDB("SELECT player_id id, player_health health FROM player");
     }
 
+    function getPlayerInfluence($playerId) {
+        return self::getUniqueValueFromDB('select player_influence from player where player_id = ' . $playerId);
+    }
+
     function gainInfluence($playerId, $gain) {
         self::DbQuery("UPDATE player set player_influence = player_influence + ${gain} where player_id = ${playerId}");
     }
 
+    function getPlayerAttack($playerId) {
+        return self::getUniqueValueFromDB('select player_attack from player where player_id = ' . $playerId);
+    }
+
     function gainAttack($playerId, $gain) {
         self::DbQuery("UPDATE player set player_attack = player_attack + ${gain} where player_id = ${playerId}");
+    }
+
+    function decreaseAttack($playerId, $decrease) {
+        self::DbQuery("UPDATE player set player_attack = player_attack - ${decrease} where player_id = ${playerId}");
     }
 
     function gainHealth($playerId, $gain) {
@@ -441,6 +451,58 @@ class HogwartsBattle extends Table
         self::checkAction("decidePlayCardOption");
         self::setGameStateValue('play_card_option', $card_option);
         $this->gamestate->nextState();
+    }
+
+    function attackVillain($slot) {
+        self::checkAction('attackVillain');
+
+        $playerId = self::getActivePlayerId();
+        $attack = $this->getPlayerAttack($playerId);
+        if ($attack < 1) {
+            throw new feException('You don\'t have any attack tokens to attack a villain');
+        }
+
+        $dmg = self::getGameStateValue("villain_${slot}_dmg") + 1;
+        $this->decreaseAttack($playerId, 1);
+
+        $cards = $this->villainCards->getPlayerHand($slot);
+        $card = reset($cards);
+        $villainCard = $this->villainCardsLibrary->getVillainCard($card['type'], $card['type_arg']);
+
+        if ($dmg < $villainCard->health) {
+            self::setGameStateValue("villain_${slot}_dmg", $dmg);
+            self::notifyAllPlayers(
+                'villainAttacked',
+                clienttranslate('${player_name} attacked ${villain_name} for 1 ${attack_token}'),
+                array (
+                    'i18n' => array ('card_name'),
+                    'players' => $this->getPlayerStats(),
+                    'player_name' => self::getActivePlayerName(),
+                    'villain_name' => $villainCard->name,
+                    'attack_token' => $this->getLogsGainAttackIcon()
+                )
+            );
+            $this->gamestate->nextState('villainAttacked');
+        } else {
+
+            // TODO run effect trigger onDefeatVillain
+
+            self::setGameStateValue("villain_${slot}_dmg", 0);
+            $this->villainCards->moveCard($card['id'], 'discard');
+            self::notifyAllPlayers(
+                'villainDefeated',
+                clienttranslate('${player_name} defeated ${villain_name}'),
+                array (
+                    'i18n' => array ('card_name'),
+                    'players' => $this->getPlayerStats(),
+                    'player_name' => self::getActivePlayerName(),
+                    'villain_name' => $villainCard->name,
+                    'villain_id' => $villainCard->id,
+                    'villain_slot' => $slot
+                )
+            );
+            $this->gamestate->nextState('villainDefeated');
+        }
     }
 
     function acquireHogwartsCard($cardId) {
@@ -546,6 +608,14 @@ class HogwartsBattle extends Table
         }
 
         return $args;
+    }
+    
+    function argVillainAttacked() {
+        return array(
+            1 => self::getGameStateValue('villain_1_dmg'),
+            2 => self::getGameStateValue('villain_2_dmg'),
+            3 => self::getGameStateValue('villain_3_dmg')
+        );
     }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -763,6 +833,22 @@ class HogwartsBattle extends Table
             $this->gamestate->nextState('cardResolved');
         } else {
             $this->gamestate->nextState('chooseCardOption');
+        }
+    }
+    
+    function stVillainAttacked() {
+        // Just a step to update UI
+        $this->gamestate->nextState();
+    }
+
+    function stVillainDefeated() {
+        $villainsLeft = $this->villainCards->countCardInLocation('deck');
+        $activeVillains = $this->villainCards->countCardInLocation('hand');
+
+        if ($villainsLeft == 0 && $activeVillains == 0) {
+            $this->gamestate->nextState('victory');
+        } else {
+            $this->gamestate->nextState('playerTurn');
         }
     }
 
