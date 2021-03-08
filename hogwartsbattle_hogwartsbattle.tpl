@@ -136,11 +136,11 @@
   var jstpl_active_villain =
     '<div class="whiteblock default_background big_card_wrapper" style="height: auto">\
         <h3 class="flex-space-between">\
-            <div>{ACTIVE_VILLAIN} ${villainNr}</div>\
+            <div>{ACTIVE_VILLAIN}</div>\
             <div><div class="icon attack_icon"></div><span id="damage_counter_v${villainNr}"></span></div>\
         </h3>\
         <div class="active_villain_background">\
-            <div id="active_villain_${villainNr}"></div>\
+            <div id="active_villain_${villainNr}" class="active_villain_wrapper"></div>\
             <div id="villain_drop_zone_v${villainNr}" data-villain-slot="${villainNr}" class="active_hero_drop_zone"></div>\
         </div>\
     </div>';

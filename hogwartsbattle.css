@@ -256,7 +256,16 @@
     background-size: 200px;
 }
 
+.active_villain_wrapper {
+    position: relative;
+    width: 200px;
+    height: 150px;
+}
+
 .active_villain {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 200px;
     height: 150px;
     background-image: url(img/villains.png);

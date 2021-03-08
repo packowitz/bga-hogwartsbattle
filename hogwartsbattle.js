@@ -46,7 +46,6 @@ function (dojo, declare) {
 
             this.villainDescriptions = {};
             this.villainsMax = 0;
-            this.villainsLeft = 0;
             this.villains = {};
             this.villainCounter = {};
             this.villainDmgCounter = {};
@@ -104,13 +103,13 @@ function (dojo, declare) {
 
             // Villains
             this.villainsMax = gamedatas.villains_max;
-            this.villainsLeft = gamedatas.villains_left;
+            let villainsLeft = gamedatas.villains_left;
             this.villainCounter = new ebg.counter();
             this.villainCounter.create('villain_counter');
-            this.villainCounter.setValue(this.villainsLeft);
+            this.villainCounter.setValue(villainsLeft);
 
             let villainDeckElem = dojo.byId('villain_deck');
-            if (this.villainsLeft == 0) {
+            if (villainsLeft == 0) {
                 dojo.removeClass(villainDeckElem, 'villain_back');
                 dojo.addClass(villainDeckElem, 'villain_back_empty');
             }
@@ -126,6 +125,7 @@ function (dojo, declare) {
 
                 this.villainDropZones[slot] = new ebg.zone();
                 this.villainDropZones[slot].create(this, 'villain_drop_zone_v' + slot, 40, 40);
+                this.villainDropZones[slot].setPattern('ellipticalfit');
 
                 let villainCard = gamedatas['villain_' + slot];
                 if (villainCard) {
@@ -134,7 +134,6 @@ function (dojo, declare) {
 
                     let dmg = gamedatas['villain_' + slot + '_dmg'];
                     this.villainDmgCounter[slot].setValue(dmg);
-                    this.villainDropZones[slot].setPattern('ellipticalfit');
 
                     for (let i = 1; i <= dmg; i++) {
                         this.placeAttackTokenToVillain(slot, i);
@@ -248,8 +247,10 @@ function (dojo, declare) {
                         // can attack villains
                         if (this.attack_counters[this.player_id].getValue() > 0) {
                             for (let i = 1; i <= this.villainsMax; i++) {
-                                dojo.addClass(dojo.byId('villain_drop_zone_v' + i), 'can_attack');
-                                this.connect($('villain_drop_zone_v' + i), 'onclick', 'onAttackVillain');
+                                if (this.villains[i]) {
+                                    dojo.addClass(dojo.byId('villain_drop_zone_v' + i), 'can_attack');
+                                    this.connect($('villain_drop_zone_v' + i), 'onclick', 'onAttackVillain');
+                                }
                             }
                         }
                     }
@@ -263,7 +264,7 @@ function (dojo, declare) {
                             let dmgDiff = dmg - dmgBefore;
                             this.villainDmgCounter[slot].incValue(dmgDiff);
                             if (dmgDiff > 0) {
-                                for (let i = dmgBefore; i <= dmg; i++) {
+                                for (let i = (dmgBefore + 1); i <= dmg; i++) {
                                     this.placeAttackTokenToVillain(slot, i);
                                 }
                             }
@@ -443,7 +444,9 @@ function (dojo, declare) {
                   slot: slot,
                   posX: -200 * cardNr,
                   posY: 150 * gameNr,
-              }), 'active_villain_' + slot);
+              }), 'villain_deck');
+            this.attachToNewParent('villain_' + villainId, 'active_villain_' + slot);
+            this.slideToObject('villain_' + villainId, 'active_villain_' + slot, 1000).play();
         },
 
         placeAttackTokenToVillain: function(slot, dmg) {
@@ -740,6 +743,7 @@ function (dojo, declare) {
             dojo.subscribe('acquireHogwartsCard', this, "notif_acquireHogwartsCard");
             dojo.subscribe('villainAttacked', this, "notif_villainAttacked");
             dojo.subscribe('villainDefeated', this, "notif_villainDefeated");
+            dojo.subscribe('villainRevealed', this, "notif_villainRevealed");
         },
         
         // TODO: from this point and below, you can write your game notifications handling methods
@@ -844,6 +848,22 @@ function (dojo, declare) {
                 this.removeAttackTokenToVillain(slot, i);
             }
             this.slideToObjectAndDestroy("villain_" + villainId, "player_boards", 1000, 0 );
+        },
+
+        notif_villainRevealed: function(notif) {
+            let slot = notif.args.villain_slot;
+            let villainCard = notif.args.villain;
+
+            let villainId = (parseInt(villainCard.type) * 100) + parseInt(villainCard.type_arg);
+            this.villains[slot] = this.villainDescriptions[villainId];
+
+            this.placeVillain(villainCard, slot);
+
+            this.villainCounter.incValue(-1);
+            if (this.villainCounter.getValue() == 0) {
+                dojo.removeClass(villainDeckElem, 'villain_back');
+                dojo.addClass(villainDeckElem, 'villain_back_empty');
+            }
         },
    });
 });

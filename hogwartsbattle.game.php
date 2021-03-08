@@ -846,6 +846,7 @@ class HogwartsBattle extends Table
         $activeVillains = $this->villainCards->countCardInLocation('hand');
 
         if ($villainsLeft == 0 && $activeVillains == 0) {
+            self::DbQuery("UPDATE player set player_score = 1");
             $this->gamestate->nextState('victory');
         } else {
             $this->gamestate->nextState('playerTurn');
@@ -866,8 +867,6 @@ class HogwartsBattle extends Table
         $newHogwartsCards = $this->hogwartsCards->pickCardsForLocation($missingCards, 'deck', 'revealed');
 
         // Notify players
-        // TODO send hand cards only to player
-        // TODO Reset all effects that are in place for this turn
         self::notifyAllPlayers(
             'endTurn',
             clienttranslate('${player_name} ends the turn'),
@@ -878,6 +877,33 @@ class HogwartsBattle extends Table
                 'player_name' => self::getActivePlayerName(),
             )
         );
+        if ($this->villainCards->countCardInLocation('deck') > 0 && $this->villainCards->countCardInLocation('hand') < self::getGameStateValue('villains_max')) {
+            $this->gamestate->nextState('revealVillain');
+        } else {
+            $this->gamestate->nextState('refillHandCards');
+        }
+    }
+
+    function stRevealVillain() {
+        $villainsMax = self::getGameStateValue('villains_max');
+        for($slot = 1; $slot <= $villainsMax; $slot ++){
+            if ($this->villainCards->countCardInLocation('hand', $slot) == 0) {
+                $this->villainCards->pickCard('deck', 1);
+                // TODO add effects of revealed villain then run onVillainRevealed actions (Deatheater)
+                $cards = $this->villainCards->getPlayerHand($slot);
+                $card = reset($cards);
+                $villainCard = $this->villainCardsLibrary->getVillainCard($card['type'], $card['type_arg']);
+                self::notifyAllPlayers(
+                    'villainRevealed',
+                    clienttranslate('${villain_name} is revealed'),
+                    array (
+                        'villain_name' => $villainCard->name,
+                        'villain_slot' => $slot,
+                        'villain' => $card
+                    )
+                );
+            }
+        }
         $this->gamestate->nextState();
     }
 

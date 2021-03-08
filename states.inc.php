@@ -135,6 +135,13 @@ $machinestates = array(
         "description" => "",
         "type" => "game",
         "action" => "stEndTurn",
+        "transitions" => array("revealVillain" => 73, "refillHandCards" => 75)
+    ),
+    73 => array(
+        "name" => "revealVillain",
+        "description" => "",
+        "type" => "game",
+        "action" => "stRevealVillain",
         "transitions" => array("" => 75)
     ),
     75 => array(
