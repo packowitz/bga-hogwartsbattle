@@ -715,6 +715,13 @@ class HogwartsBattle extends Table
                     $notif_args['attack'] = $attack;
                     $notif_args['attack_token'] = $this->getLogsGainAttackIcon();
                     break;
+                case '+1hp':
+                    $healing = min(array(10 - $this->getHealth($playerId), 1));
+                    $this->gainHealth($playerId, $healing);
+                    $notif_log .= clienttranslate(' and gains ${healing} ${health_icon}');
+                    $notif_args['healing'] = $healing;
+                    $notif_args['health_icon'] = $this->getLogsGainHealthIcon();
+                    break;
                 case '+1hp_all':
                     foreach ($this->getAllPlayerHealth() as $pId => $pInfo) {
                         $healing = min(array(10 - $pInfo['health'], 1));
@@ -847,6 +854,7 @@ class HogwartsBattle extends Table
 
         if ($villainsLeft == 0 && $activeVillains == 0) {
             self::DbQuery("UPDATE player set player_score = 1");
+            self::notifyAllPlayers('victory', clienttranslate('All Villains defeated. Congratulations'), array ());
             $this->gamestate->nextState('victory');
         } else {
             $this->gamestate->nextState('playerTurn');
