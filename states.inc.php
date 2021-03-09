@@ -66,7 +66,6 @@ $machinestates = array(
         "description" => "",
         "type" => "game",
         "action" => "stInitTurn",
-        "args" => "argInitTurnEffects",
         "transitions" => array("" => 11)
     ),
     11 => array(
@@ -75,7 +74,21 @@ $machinestates = array(
         "type" => "game",
         "action" => "stInitTurnEffects",
         "args" => "argInitTurnEffects",
-        "transitions" => array("" => 19)
+        "transitions" => array("" => 15)
+    ),
+    15 => array(
+        "name" => "villainAbilities",
+        "description" => "",
+        "type" => "game",
+        "action" => "stVillainAbilities",
+        "transitions" => array("villainTurn" => 16, "playerTurn" => 19)
+    ),
+    16 => array(
+        "name" => "villainTurn",
+        "description" => "",
+        "type" => "game",
+        "action" => "stVillainTurn",
+        "transitions" => array("executed" => 15)
     ),
     19 => array(
         "name" => "beforePlayerTurn",
@@ -104,7 +117,7 @@ $machinestates = array(
         "description" => "",
         "type" => "game",
         "action" => "stPlayCard",
-        "transitions" => array("cardResolved" => 20, "chooseCardOption" => 22)
+        "transitions" => array("cardResolved" => 23, "chooseCardOption" => 22)
     ),
     22 => array(
         "name" => "chooseCardOption",
@@ -113,7 +126,14 @@ $machinestates = array(
         "type" => "activeplayer",
         "args" => "argChooseCardOption",
         "possibleactions" => array("decidePlayCardOption"),
-        "transitions" => array("" => 21)
+        "transitions" => array("" => 23)
+    ),
+    23 => array(
+        "name" => "playCardResolved",
+        "description" => "",
+        "type" => "game",
+        "action" => "stPlayCardResolved",
+        "transitions" => array("" => 20)
     ),
     30 => array(
         "name" => "villainAttacked",
@@ -128,7 +148,23 @@ $machinestates = array(
         "description" => "",
         "type" => "game",
         "action" => "stVillainDefeated",
-        "transitions" => array("playerTurn" => 20, "victory" => 99)
+        "transitions" => array("villainDefeatedEffects" => 32, "victory" => 99)
+    ),
+    32 => array(
+        "name" => "villainDefeatedEffects",
+        "description" => "",
+        "type" => "game",
+        "action" => "stVillainDefeatedEffects",
+        "transitions" => array("effectsResolved" => 20, "chooseEffectOption" => 35)
+    ),
+    35 => array(
+        "name" => "chooseEffectOption",
+        "description" => clienttranslate('${actplayer} decides on effect options'),
+        "descriptionmyturn" => clienttranslate('${you} must decide'),
+        "type" => "activeplayer",
+        "args" => "argChooseEffectOption",
+        "possibleactions" => array("decideEffectOption"),
+        "transitions" => array("" => 32)
     ),
     70 => array(
         "name" => "endTurn",
@@ -158,29 +194,6 @@ $machinestates = array(
         "action" => "stCleanEffectsNextPlayer",
         "transitions" => array("" => 10)
     ),
-
-    /*
-        Examples:
-
-        2 => array(
-            "name" => "nextPlayer",
-            "description" => '',
-            "type" => "game",
-            "action" => "stNextPlayer",
-            "updateGameProgression" => true,
-            "transitions" => array( "endGame" => 99, "nextPlayer" => 10 )
-        ),
-
-        10 => array(
-            "name" => "playerTurn",
-            "description" => clienttranslate('${actplayer} must play a card or pass'),
-            "descriptionmyturn" => clienttranslate('${you} must play a card or pass'),
-            "type" => "activeplayer",
-            "possibleactions" => array( "playCard", "pass" ),
-            "transitions" => array( "playCard" => 2, "pass" => 2 )
-        ),
-
-    */
 
     // Final state.
     // Please do not modify (and do not overload action/args methods).

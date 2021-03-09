@@ -737,13 +737,17 @@ function (dojo, declare) {
             // this.notifqueue.setSynchronous( 'cardPlayed', 3000 );
             //
             dojo.subscribe('endTurn', this, "notif_endTurn");
-            dojo.subscribe('refillHandCards', this, "notif_refillHandCards");
+            dojo.subscribe('refillHandCards', this, "notif_newHandCards");
+            dojo.subscribe('newHandCards', this, "notif_newHandCards");
             dojo.subscribe('refillHandCardsLog', this, "notif_refillHandCardsLog");
             dojo.subscribe('cardPlayed', this, "notif_cardPlayed");
             dojo.subscribe('acquireHogwartsCard', this, "notif_acquireHogwartsCard");
-            dojo.subscribe('villainAttacked', this, "notif_villainAttacked");
+            dojo.subscribe('villainAttacked', this, "notif_updatePlayerStats");
             dojo.subscribe('villainDefeated', this, "notif_villainDefeated");
             dojo.subscribe('villainRevealed', this, "notif_villainRevealed");
+            dojo.subscribe('villainTurn', this, "notif_updatePlayerStats");
+            dojo.subscribe('updatePlayerStats', this, "notif_updatePlayerStats");
+            dojo.subscribe('effects', this, "notif_updateEffects");
         },
         
         // TODO: from this point and below, you can write your game notifications handling methods
@@ -781,7 +785,7 @@ function (dojo, declare) {
             this.revealHogwartsCards(notif.args.new_hogwarts_cards);
         },
 
-        notif_refillHandCards: function(notif) {
+        notif_newHandCards: function(notif) {
             setTimeout(() => this.drawHogwartsCards(notif.args.new_hand_cards), 1000);
         },
 
@@ -792,7 +796,6 @@ function (dojo, declare) {
         notif_cardPlayed: function(notif) {
             this.acquirableHogwartsCards = notif.args.acquirable_hogwarts_cards;
             this.checkAcquirableHogwartsCards();
-            this.checkActiveEffects(notif.args.effects);
 
             if (this.player_id == notif.args.player_id) {
                 let cardElemId = 'hogwarts_card_' + notif.args.card_id + '_p' + notif.args.player_id;
@@ -833,12 +836,17 @@ function (dojo, declare) {
             setTimeout(() => this.updatePlayerStats(notif.args.players), 1000);
         },
 
-        notif_villainAttacked: function(notif) {
+        notif_updatePlayerStats: function(notif) {
             this.updatePlayerStats(notif.args.players)
+        },
+
+        notif_updateEffects: function(notif) {
+            this.checkActiveEffects(notif.args.effects);
         },
 
         notif_villainDefeated: function(notif) {
             this.updatePlayerStats(notif.args.players)
+            this.checkActiveEffects(notif.args.effects);
             let slot = notif.args.villain_slot;
             let villainId = notif.args.villain_id;
             this.villains[slot] = null;

@@ -82,6 +82,7 @@ CREATE TABLE IF NOT EXISTS `effect` (
   `effect_source` varchar(16) NOT NULL,
   `effect_source_id` int(11) NOT NULL,
   `effect_source_card_id` int(11) NOT NULL,
+  `effect_resolved` BOOLEAN NOT NULL DEFAULT false,
   PRIMARY KEY (`effect_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 

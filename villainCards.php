@@ -7,11 +7,11 @@ class VillainCard {
     public $name;
     public $health;
     public $effect;
-    public $action;
-    public $rewards;
+    public $ability;
+    public $reward;
     public $desc;
 
-    public function __construct($gameNr, $cardNr, $name, $health, $effect, $action, $rewards, $desc)
+    public function __construct($gameNr, $cardNr, $name, $health, $effect, $ability, $reward, $desc)
     {
         $this->id = HogwartsCards::cardId($gameNr, $cardNr);
         $this->gameNr = $gameNr;
@@ -19,8 +19,8 @@ class VillainCard {
         $this->name = $name;
         $this->health = $health;
         $this->effect = $effect;
-        $this->action = $action;
-        $this->rewards = $rewards;
+        $this->ability = $ability;
+        $this->reward = $reward;
         $this->desc = $desc;
     }
 }
@@ -31,13 +31,13 @@ class VillainCards {
 
     function __construct() {
         $this->villainCards = array(
-            0 => new VillainCard(0, 0, clienttranslate('Draco Malfoy'), 6, '2dmg_onLocationToken', null, array('-1loc_token'),
+            0 => new VillainCard(0, 0, clienttranslate('Draco Malfoy'), 6, '2dmg_onLocationToken', null, '-1loc_token',
                 clienttranslate('Each time ${location_token} is added to the Location, active Hero loses 2 ${health_icon}')),
 
-            1 => new VillainCard(0, 1, clienttranslate('Crabbe & Goyle'), 5, '1dmg_onDiscard', null, array('+card'),
+            1 => new VillainCard(0, 1, clienttranslate('Crabbe & Goyle'), 5, '1dmg_onDiscard', null, '+card_all',
                 clienttranslate('Each time a Dark Arts event or Villain causes a Hero to discard a card, that Hero loses 1 ${health_icon}')),
 
-            2 => new VillainCard(0, 2, clienttranslate('Quirinus Quirrell'), 6, null, '1dmg', array('+1inf', '+1hp'),
+            2 => new VillainCard(0, 2, clienttranslate('Quirinus Quirrell'), 6, null, '1dmg', '+1inf_+1hp_all',
                 clienttranslate('Active Hero loses 1 ${health_icon}'))
         );
     }

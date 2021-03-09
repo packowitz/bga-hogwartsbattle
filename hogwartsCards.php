@@ -8,11 +8,12 @@ class HogwartsCard {
     public $cost;
     public $type;
     public $onPlay;
+    public $onPlayEffect;
     public $onDiscard;
     public $onHand;
     public $desc;
 
-    public function __construct($gameNr, $cardNr, $name, $cost, $type, $onPlay, $onDiscard, $onHand, $desc)
+    public function __construct($gameNr, $cardNr, $name, $cost, $type, $onPlay, $onPlayEffect, $onDiscard, $onHand, $desc)
     {
         $this->typeId = HogwartsCards::cardId($gameNr, $cardNr);
         $this->gameNr = $gameNr;
@@ -21,6 +22,7 @@ class HogwartsCard {
         $this->cost = $cost;
         $this->type = $type;
         $this->onPlay = $onPlay;
+        $this->onPlayEffect = $onPlayEffect;
         $this->onDiscard = $onDiscard;
         $this->onHand = $onHand;
         $this->desc = $desc;
@@ -40,88 +42,88 @@ class HogwartsCards {
 
     function __construct() {
         $this->hogwartsCards = array(
-            0 => new HogwartsCard(0, 0, clienttranslate('Alohomora'), 0, self::$spellType, array('+1inf'), array(), array(),
+            0 => new HogwartsCard(0, 0, clienttranslate('Alohomora'), 0, self::$spellType, '+1inf', null, null, null,
                 array('onPlay' => clienttranslate('Gain 1 ${influence_token}'))),
 
-            1 => new HogwartsCard(0, 1, clienttranslate('Firebolt'), 0, self::$itemType, array('+1att', '+1inf_onDefVil'), array(), array(),
+            1 => new HogwartsCard(0, 1, clienttranslate('Firebolt'), 0, self::$itemType, '+1att', '+1inf_onDefVil', null, null,
                 array('onPlay' => clienttranslate('Gain 1 ${attack_token}'), 'onDefeatVillain' => clienttranslate('If you defeat a Villain, also gain 1 ${influence_token}'))),
 
-            2 => new HogwartsCard(0, 2, clienttranslate('Invisibility Cloak'), 0, self::$itemType, array('+1inf'), array(), array('max1dmg'),
+            2 => new HogwartsCard(0, 2, clienttranslate('Invisibility Cloak'), 0, self::$itemType, '+1inf', null, null, 'max1dmg',
                 array('onPlay' => clienttranslate('Gain 1 ${influence_token}'), 'onHand' => clienttranslate('If this is in your hand, you can\'t lose more than 1 ${health_icon} from each Dark Arts event or Villain'))),
 
-            3 => new HogwartsCard(0, 3, clienttranslate('Hedwig'), 0, self::$allyType, array('c[+1att|+2hp]'), array(), array(),
+            3 => new HogwartsCard(0, 3, clienttranslate('Hedwig'), 0, self::$allyType, 'c[+1att|+2hp]', null, null, null,
                 array('onPlay' => clienttranslate('Choose one: Gain 1 ${attack_token} or gain 2 ${health_icon}'))),
 
-            4 => new HogwartsCard(0, 4, clienttranslate('Alohomora'), 0, self::$spellType, array('+1inf'), array(), array(),
+            4 => new HogwartsCard(0, 4, clienttranslate('Alohomora'), 0, self::$spellType, '+1inf', null, null, null,
                 array('onPlay' => clienttranslate('Gain 1 ${influence_token}'))),
 
-            5 => new HogwartsCard(0, 5, clienttranslate('Cleansweep 11'), 0, self::$itemType, array('+1att', '+1inf_onDefVil'), array(), array(),
+            5 => new HogwartsCard(0, 5, clienttranslate('Cleansweep 11'), 0, self::$itemType, '+1att', '+1inf_onDefVil', null, null,
                 array('onPlay' => clienttranslate('Gain 1 ${attack_token}'), 'onDefeatVillain' => clienttranslate('If you defeat a Villain, also gain 1 ${influence_token}'))),
 
-            6 => new HogwartsCard(0, 6, clienttranslate('Bertie Botts Every Flavour Beans'), 0, self::$itemType, array('+1inf', '+1att_xAllyPlayed'), array(), array(),
+            6 => new HogwartsCard(0, 6, clienttranslate('Bertie Botts Every Flavour Beans'), 0, self::$itemType, '+1inf_+1att_xAllyPlayed', null, null, null,
                 array('onPlay' => clienttranslate('Gain 1 ${influence_token}. For each Ally played this turn, gain 1 ${attack_token}'))),
 
-            7 => new HogwartsCard(0, 7, clienttranslate('Pigwidgeon'), 0, self::$allyType, array('c[+1att|+2hp]'), array(), array(),
+            7 => new HogwartsCard(0, 7, clienttranslate('Pigwidgeon'), 0, self::$allyType, 'c[+1att|+2hp]', null, null, null,
                 array('onPlay' => clienttranslate('Choose one: Gain 1 ${attack_token} or gain 2 ${health_icon}'))),
 
-            8 => new HogwartsCard(0, 8, clienttranslate('Alohomora'), 0, self::$spellType, array('+1inf'), array(), array(),
+            8 => new HogwartsCard(0, 8, clienttranslate('Alohomora'), 0, self::$spellType, '+1inf', null, null, null,
                 array('onPlay' => clienttranslate('Gain 1 ${influence_token}'))),
 
-            9 => new HogwartsCard(0, 9, clienttranslate('Tales of Beedle the Bard'), 0, self::$itemType, array('c[+2inf|+1inf_all]'), array(), array(),
+            9 => new HogwartsCard(0, 9, clienttranslate('Tales of Beedle the Bard'), 0, self::$itemType, 'c[+2inf|+1inf_all]', null, null, null,
                 array('onPlay' => clienttranslate('Choose one: Gain 2 ${influence_token} or ALL Heroes gain 1 ${influence_token}'))),
 
-            10 => new HogwartsCard(0, 10, clienttranslate('Time Turner'), 0, self::$itemType, array('+1inf', 'spells_top_deck'), array(), array(),
+            10 => new HogwartsCard(0, 10, clienttranslate('Time Turner'), 0, self::$itemType, '+1inf', 'spells_top_deck', null, null,
                 array('onPlay' => clienttranslate('Gain 1 ${influence_token}'), 'onAcquire' => clienttranslate('You may put Spells you acquire on top of your deck instead of in your discard pile'))),
 
-            11 => new HogwartsCard(0, 11, clienttranslate('Crookshanks'), 0, self::$allyType, array('c[+1att|+2hp]'), array(), array(),
+            11 => new HogwartsCard(0, 11, clienttranslate('Crookshanks'), 0, self::$allyType, 'c[+1att|+2hp]', null, null, null,
                 array('onPlay' => clienttranslate('Choose one: Gain 1 ${attack_token} or gain 2 ${health_icon}'))),
 
-            12 => new HogwartsCard(0, 12, clienttranslate('Alohomora'), 0, self::$spellType, array('+1inf'), array(), array(),
+            12 => new HogwartsCard(0, 12, clienttranslate('Alohomora'), 0, self::$spellType, '+1inf', null, null, null,
                 array('onPlay' => clienttranslate('Gain 1 ${influence_token}'))),
 
-            13 => new HogwartsCard(0, 13, clienttranslate('Remembrall'), 0, self::$itemType, array('+1inf'), array('+2inf'), array(),
+            13 => new HogwartsCard(0, 13, clienttranslate('Remembrall'), 0, self::$itemType, '+1inf', null, '+2inf', null,
                 array('onPlay' => clienttranslate('Gain 1 ${influence_token}'), 'onDiscard' => clienttranslate('If you discard this, also gain 2 ${influence_token}'))),
 
-            14 => new HogwartsCard(0, 14, clienttranslate('Mandrake'), 0, self::$itemType, array('c[+1att|+2hp_any]'), array(), array(),
+            14 => new HogwartsCard(0, 14, clienttranslate('Mandrake'), 0, self::$itemType, 'c[+1att|+2hp_any]', null, null, null,
                 array('onPlay' => clienttranslate('Choose one: Gain 1 ${attack_token} or any one Hero gains 2 ${health_icon}'))),
 
-            15 => new HogwartsCard(0, 15, clienttranslate('Trevor'), 0, self::$allyType, array('c[+1att|+2hp]'), array(), array(),
+            15 => new HogwartsCard(0, 15, clienttranslate('Trevor'), 0, self::$allyType, 'c[+1att|+2hp]', null, null, null,
                 array('onPlay' => clienttranslate('Choose one: Gain 1 ${attack_token} or gain 2 ${health_icon}'))),
 
-            100 => new HogwartsCard(1, 0, clienttranslate('Wingardium Leviosa'), 2, self::$spellType, array('+1inf', 'items_top_deck'), array(), array(),
+            100 => new HogwartsCard(1, 0, clienttranslate('Wingardium Leviosa'), 2, self::$spellType, '+1inf', 'items_top_deck', null, null,
                 array('onPlay' => clienttranslate('Gain 1 ${influence_token}'), 'onAcquire' => clienttranslate('You may put Items you acquire on top of your deck instead of in your discard pile'))),
 
-            101 => new HogwartsCard(1, 1, clienttranslate('Reparo'), 3, self::$spellType, array('c[+2inf|+1card]'), array(), array(),
+            101 => new HogwartsCard(1, 1, clienttranslate('Reparo'), 3, self::$spellType, 'c[+2inf|+1card]', null, null, null,
                 array('onPlay' => clienttranslate('Choose one: Gain 2 ${influence_token} or draw a card'))),
 
-            102 => new HogwartsCard(1, 2, clienttranslate('Incendio'), 4, self::$spellType, array('+1att', '+1card'), array(), array(),
+            102 => new HogwartsCard(1, 2, clienttranslate('Incendio'), 4, self::$spellType, '+1att_+1card', null, null, null,
                 array('onPlay' => clienttranslate('Gain 1 ${attack_token} and draw a card'))),
 
-            103 => new HogwartsCard(1, 3, clienttranslate('Lumos'), 4, self::$spellType, array('+1card_all'), array(), array(),
+            103 => new HogwartsCard(1, 3, clienttranslate('Lumos'), 4, self::$spellType, '+1card_all', null, null, null,
                 array('onPlay' => clienttranslate('ALL Heroes draw a card'))),
 
-            104 => new HogwartsCard(1, 4, clienttranslate('Descendo'), 5, self::$spellType, array('+2att'), array(), array(),
+            104 => new HogwartsCard(1, 4, clienttranslate('Descendo'), 5, self::$spellType, '+2att', null, null, null,
                 array('onPlay' => clienttranslate('Gain 2 ${attack_token}'))),
 
-            105 => new HogwartsCard(1, 5, clienttranslate('Essence of Dittany'), 2, self::$itemType, array('c[+2hp_any]'), array(), array(),
+            105 => new HogwartsCard(1, 5, clienttranslate('Essence of Dittany'), 2, self::$itemType, 'c[+2hp_any]', null, null, null,
                 array('onPlay' => clienttranslate('Any one Hero gains 2 ${health_icon}'))),
 
-            106 => new HogwartsCard(1, 6, clienttranslate('Quidditch Gear'), 3, self::$itemType, array('+1att', '+1hp'), array(), array(),
+            106 => new HogwartsCard(1, 6, clienttranslate('Quidditch Gear'), 3, self::$itemType, '+1att_+1hp', null, null, null,
                 array('onPlay' => clienttranslate('Gain 1 ${attack_token} and 1 ${health_icon}'))),
 
-            107 => new HogwartsCard(1, 7, clienttranslate('Sorting Hat'), 4, self::$itemType, array('+2inf', 'allies_on_top'), array(), array(),
+            107 => new HogwartsCard(1, 7, clienttranslate('Sorting Hat'), 4, self::$itemType, '+2inf', 'allies_on_top', null, null,
                 array('onPlay' => clienttranslate('Gain 2 ${influence_token}'), 'onAcquire' => clienttranslate('You may put Allies you acquire on top of your deck instead of in your discard pile'))),
 
-            108 => new HogwartsCard(1, 8, clienttranslate('Golden Snitch'), 5, self::$itemType, array('+2inf', '+1card'), array(), array(),
+            108 => new HogwartsCard(1, 8, clienttranslate('Golden Snitch'), 5, self::$itemType, '+2inf_+1card', null, null, null,
                 array('onPlay' => clienttranslate('Gain 2 ${influence_token} and draw a card'))),
 
-            109 => new HogwartsCard(1, 9, clienttranslate('Oliver Wood'), 3, self::$allyType, array('+1att', 'c[+2hp_any_onDefVil]'), array(), array(),
+            109 => new HogwartsCard(1, 9, clienttranslate('Oliver Wood'), 3, self::$allyType, '+1att', 'c[+2hp_any_onDefVil]', null, null,
                 array('onPlay' => clienttranslate('Gain 1 ${attack_token}'), 'onDefeatVillain' => clienttranslate('If you defeat a Villain, also any one Hero gains 2 ${health_icon}'))),
 
-            110 => new HogwartsCard(1, 10, clienttranslate('Rubeus Hagrid'), 4, self::$allyType, array('+1att', '+1hp_all'), array(), array(),
+            110 => new HogwartsCard(1, 10, clienttranslate('Rubeus Hagrid'), 4, self::$allyType, '+1att_+1hp_all', null, null, null,
                 array('onPlay' => clienttranslate('Gain 1 ${attack_token} and ALL Heroes gain 1 ${health_icon}'))),
 
-            111 => new HogwartsCard(1, 11, clienttranslate('Albus Dumbledor'), 8, self::$allyType, array('+1att_all', '+1inf_all', '+1hp_all', '+1card_all'), array(), array(),
+            111 => new HogwartsCard(1, 11, clienttranslate('Albus Dumbledor'), 8, self::$allyType, '+1att_all_+1inf_all_+1hp_all_+1card_all', null, null, null,
                 array('onPlay' => clienttranslate('ALL Heroes gain 1 ${attack_token}, 1 ${influence_token}, 1 ${health_icon} and draw a card'))),
         );
     }
