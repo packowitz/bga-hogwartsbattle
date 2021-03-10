@@ -13,8 +13,7 @@ class HogwartsCard {
     public $onHand;
     public $desc;
 
-    public function __construct($gameNr, $cardNr, $name, $cost, $type, $onPlay, $onPlayEffect, $onDiscard, $onHand, $desc)
-    {
+    public function __construct($gameNr, $cardNr, $name, $cost, $type, $onPlay, $onPlayEffect, $onDiscard, $onHand, $desc) {
         $this->typeId = HogwartsCards::cardId($gameNr, $cardNr);
         $this->gameNr = $gameNr;
         $this->cardNr = $cardNr;

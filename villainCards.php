@@ -11,9 +11,8 @@ class VillainCard {
     public $reward;
     public $desc;
 
-    public function __construct($gameNr, $cardNr, $name, $health, $effect, $ability, $reward, $desc)
-    {
-        $this->id = HogwartsCards::cardId($gameNr, $cardNr);
+    public function __construct($gameNr, $cardNr, $name, $health, $effect, $ability, $reward, $desc) {
+        $this->id = VillainCards::cardId($gameNr, $cardNr);
         $this->gameNr = $gameNr;
         $this->cardNr = $cardNr;
         $this->name = $name;

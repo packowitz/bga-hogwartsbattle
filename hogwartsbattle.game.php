@@ -20,7 +20,7 @@
 require_once( APP_GAMEMODULE_PATH.'module/table/table.game.php' );
 require_once('hogwartsCards.php');
 require_once('villainCards.php');
-
+require_once('darkArtsCards.php');
 
 class HogwartsBattle extends Table
 {
@@ -54,6 +54,8 @@ class HogwartsBattle extends Table
             'location_number' => 22,
             'location_marker' => 23,
 
+            'dark_arts_cards_revealed' => 27,
+
             'villains_max' => 30,
             'villain_1_dmg' => 31,
             'villain_2_dmg' => 32,
@@ -64,6 +66,7 @@ class HogwartsBattle extends Table
 
         $this->hogwartsCardsLibrary = new HogwartsCards();
         $this->villainCardsLibrary = new VillainCards();
+        $this->darkArtsCardsLibrary = new DarkArtsCards();
 
         $this->hogwartsCards = self::getNew("module.common.deck");
         $this->hogwartsCards->init("hogwarts_card");
@@ -85,6 +88,9 @@ class HogwartsBattle extends Table
 
         $this->villainCards = self::getNew("module.common.deck");
         $this->villainCards->init("villain_card");
+
+        $this->darkArtsCards = self::getNew("module.common.deck");
+        $this->darkArtsCards->init("dark_arts_card");
 	}
 	
     protected function getGameName( )
@@ -141,6 +147,8 @@ class HogwartsBattle extends Table
         self::setGameStateInitialValue('location_number', 1);
         self::setGameStateInitialValue('location_marker', 0);
 
+        self::setGameStateInitialValue('dark_arts_cards_revealed', 0);
+
         self::setGameStateInitialValue('villains_max', $villains_max);
         self::setGameStateInitialValue('villain_1_dmg', 0);
         self::setGameStateInitialValue('villain_2_dmg', 0);
@@ -148,6 +156,9 @@ class HogwartsBattle extends Table
 
         self::setGameStateInitialValue('villain_turn_slot', 0);
         self::setGameStateInitialValue('villain_turn_id', 0);
+
+        $this->darkArtsCards->createCards($this->darkArtsCardsLibrary->gameCards($gameNr));
+        $this->darkArtsCards->shuffle('deck');
 
         $this->villainCards->createCards($this->villainCardsLibrary->gameCards($gameNr));
         $this->villainCards->shuffle('deck');
@@ -208,7 +219,7 @@ class HogwartsBattle extends Table
 
         $result['location_number'] = self::getGameStateValue('location_number');
 
-        $result['location_marker_total'] = $this->getLocationMaxToken();
+        $result['location_marker_total'] = $this->getLocation()['max_tokens'];
 
         $result['location_marker'] = self::getGameStateValue('location_marker');
 
@@ -416,8 +427,8 @@ class HogwartsBattle extends Table
         return $this->heroDecks[$this->getHeroId($playerId)];
     }
 
-    function getLocationMaxToken() {
-        return $this->locations[self::getGameStateValue('game_number')][self::getGameStateValue('location_number')]['max_tokens'];
+    function getLocation() {
+        return $this->locations[self::getGameStateValue('game_number')][self::getGameStateValue('location_number')];
     }
 
     function getHealthIcon() {
@@ -938,7 +949,8 @@ class HogwartsBattle extends Table
     */
 
     function stInitTurn() {
-        // reset active villain
+        // reset dark_arts_cards and active villain
+        self::setGameStateInitialValue('dark_arts_cards_revealed', 0);
         self::setGameStateInitialValue('villain_turn_slot', 0);
 
         // check hand cards for onHand effects

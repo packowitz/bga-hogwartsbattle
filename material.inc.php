@@ -21,22 +21,7 @@
 
 $this->locations = array(
     1 => array(
-        1 => array('max_tokens' => 4),
-        2 => array('max_tokens' => 4)
+        1 => array('max_tokens' => 4, 'dark_arts_cards' => 1),
+        2 => array('max_tokens' => 4, 'dark_arts_cards' => 1)
     )
 );
-/*
-
-Example:
-
-$this->card_types = array(
-    1 => array( "card_name" => ...,
-                ...
-              )
-);
-
-*/
-
-
-
-
