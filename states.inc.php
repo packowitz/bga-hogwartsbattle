@@ -74,97 +74,113 @@ $machinestates = array(
         "type" => "game",
         "action" => "stInitTurnEffects",
         "args" => "argInitTurnEffects",
-        "transitions" => array("" => 15)
+        "transitions" => array("" => 20)
     ),
-    15 => array(
+    20 => array(
+        "name" => "revealDarkArtsCard",
+        "description" => clienttranslate('${actplayer} must reveal a Dark Arts card'),
+        "descriptionmyturn" => clienttranslate('${you} must reveal a Dark Arts card'),
+        "type" => "activeplayer",
+        "args" => "argRevealDarkArtsCard",
+        "possibleactions" => array("revealDarkArtsCard"),
+        "transitions" => array("revealed" => 21, "finished" => 30)
+    ),
+    21 => array(
+        "name" => "darkArtsCardRevealed",
+        "description" => "",
+        "type" => "game",
+        "action" => "stDarkArtsCardRevealed",
+        "transitions" => array("" => 20)
+    ),
+    30 => array(
         "name" => "villainAbilities",
         "description" => "",
         "type" => "game",
         "action" => "stVillainAbilities",
-        "transitions" => array("villainTurn" => 16, "playerTurn" => 19)
+        "transitions" => array("villainTurn" => 32, "playerTurn" => 34)
     ),
-    16 => array(
+    32 => array(
         "name" => "villainTurn",
         "description" => "",
         "type" => "game",
         "action" => "stVillainTurn",
-        "transitions" => array("executed" => 15)
+        "transitions" => array("executed" => 30)
     ),
-    19 => array(
+    34 => array(
         "name" => "beforePlayerTurn",
         "description" => "",
         "type" => "game",
         "action" => "stBeforePlayerTurn",
-        "transitions" => array("" => 20)
+        "transitions" => array("" => 40)
     ),
 
-    20 => array(
+    40 => array(
         "name" => "playerTurn",
         "description" => clienttranslate('${actplayer} must play cards or end the turn'),
         "descriptionmyturn" => clienttranslate('${you} must play cards or end your turn'),
         "type" => "activeplayer",
         "possibleactions" => array("playCard", "acquireHogwartsCard", "attackVillain", "endTurn"),
         "transitions" => array(
-            "playCard" => 21,
-            "acquireHogwartsCard" => 20,
-            "villainAttacked" => 30,
-            "villainDefeated" => 31,
+            "playCard" => 41,
+            "acquireHogwartsCard" => 40,
+            "villainAttacked" => 50,
+            "villainDefeated" => 52,
             "endTurn" => 70
         )
     ),
-    21 => array(
+    41 => array(
         "name" => "playCard",
         "description" => "",
         "type" => "game",
         "action" => "stPlayCard",
-        "transitions" => array("cardResolved" => 23, "chooseCardOption" => 22)
+        "transitions" => array("cardResolved" => 43, "chooseCardOption" => 42)
     ),
-    22 => array(
+    42 => array(
         "name" => "chooseCardOption",
         "description" => clienttranslate('${actplayer} decides on card options'),
         "descriptionmyturn" => clienttranslate('${you} must decide'),
         "type" => "activeplayer",
         "args" => "argChooseCardOption",
         "possibleactions" => array("decidePlayCardOption"),
-        "transitions" => array("" => 23)
+        "transitions" => array("" => 43)
     ),
-    23 => array(
+    43 => array(
         "name" => "playCardResolved",
         "description" => "",
         "type" => "game",
         "action" => "stPlayCardResolved",
-        "transitions" => array("" => 20)
+        "transitions" => array("" => 40)
     ),
-    30 => array(
+    50 => array(
         "name" => "villainAttacked",
         "description" => "",
         "type" => "game",
         "action" => "stVillainAttacked",
         "args" => "argVillainAttacked",
-        "transitions" => array("" => 20)
+        "transitions" => array("" => 40)
     ),
-    31 => array(
+    52 => array(
         "name" => "villainDefeated",
         "description" => "",
         "type" => "game",
         "action" => "stVillainDefeated",
-        "transitions" => array("villainDefeatedEffects" => 32, "victory" => 99)
+        "transitions" => array("villainDefeatedEffects" => 53, "victory" => 99)
     ),
-    32 => array(
+    53 => array(
         "name" => "villainDefeatedEffects",
         "description" => "",
         "type" => "game",
         "action" => "stVillainDefeatedEffects",
-        "transitions" => array("effectsResolved" => 20, "chooseEffectOption" => 35)
+        "transitions" => array("effectsResolved" => 40, "chooseEffectOption" => 55)
     ),
-    35 => array(
+    55 => array(
         "name" => "chooseEffectOption",
         "description" => clienttranslate('${actplayer} decides on effect options'),
         "descriptionmyturn" => clienttranslate('${you} must decide'),
         "type" => "activeplayer",
         "args" => "argChooseEffectOption",
         "possibleactions" => array("decideEffectOption"),
-        "transitions" => array("" => 32)
+        "transitions" => array("" => 53)
     ),
     70 => array(
         "name" => "endTurn",

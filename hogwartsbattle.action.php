@@ -35,6 +35,12 @@ class action_hogwartsbattle extends APP_GameAction {
         }
     }
 
+    public function revealDarkArtsCard() {
+        self::setAjaxMode();
+        $this->game->revealDarkArtsCard();
+        self::ajaxResponse();
+    }
+
     public function acquireHogwartsCard() {
         self::setAjaxMode();
         $card_id = self::getArg("id", AT_posint, true);

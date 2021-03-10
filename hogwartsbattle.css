@@ -226,6 +226,17 @@
     filter: drop-shadow(2px 2px 2px #444);
 }
 
+.dark_arts_card {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 140px;
+    height: 140px;
+    background-image: url('img/dark_arts_cards.png');
+    background-size: 560px;
+    filter: drop-shadow(2px 2px 2px #444);
+}
+
 .location_card {
     width: 200px;
     height: 150px;

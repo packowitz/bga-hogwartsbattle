@@ -91,6 +91,7 @@ class HogwartsBattle extends Table
 
         $this->darkArtsCards = self::getNew("module.common.deck");
         $this->darkArtsCards->init("dark_arts_card");
+        $this->darkArtsCards->autoreshuffle = true;
 	}
 	
     protected function getGameName( )
@@ -232,6 +233,8 @@ class HogwartsBattle extends Table
         $result['hand'] = $this->getDeck($current_player_id)->getCardsInLocation('hand');
 
         $result['played_cards'] = $this->getDeck(self::getActivePlayerId())->getCardsInLocation('played');
+
+        $result['dark_arts_cards'] = $this->darkArtsCards->getCardsInLocation('hand');
 
         $result['hogwarts_cards'] = $this->hogwartsCards->getCardsInLocation('revealed');
 
@@ -761,6 +764,29 @@ class HogwartsBattle extends Table
         $this->gamestate->nextState('endTurn');
     }
 
+    function revealDarkArtsCard() {
+        self::checkAction("revealDarkArtsCard");
+        $location = $this->getLocation();
+        $darkArtsCardsRevealed = self::getGameStateValue('dark_arts_cards_revealed');
+        $needToRevel = $darkArtsCardsRevealed < $location['dark_arts_cards'];
+        if ($needToRevel) {
+            $card = $this->darkArtsCards->pickCardForLocation('deck', 'hand');
+            $darkArtsCard = $this->darkArtsCardsLibrary->getDarkArtsCard($card['type'], $card['type_arg']);
+            self::notifyAllPlayers('darkArtsCardRevealed', clienttranslate('${player_name} reveals') . ' <b>${dark_arts_card}</b>',
+                array(
+                    'player_name' => self::getActivePlayerName(),
+                    'dark_arts_card' => $darkArtsCard->name,
+                    'darkArtsCard' => $card
+                )
+            );
+
+            $this->gamestate->nextState('revealed');
+        } else {
+            $this->darkArtsCards->moveAllCardsInLocation('hand', 'discard');
+            $this->gamestate->nextState('finished');
+        }
+    }
+
     function playCard($cardId) {
         self::checkAction("playCard");
         self::setGameStateValue('played_card_id', $cardId);
@@ -918,6 +944,13 @@ class HogwartsBattle extends Table
         return $this->getActiveEffects();
     }
 
+    function argRevealDarkArtsCard() {
+        $location = $this->getLocation();
+        $darkArtsCardsRevealed = self::getGameStateValue('dark_arts_cards_revealed');
+        $needToRevel = $darkArtsCardsRevealed < $location['dark_arts_cards'];
+        return array('reveal' => $needToRevel);
+    }
+
     function argChooseCardOption() {
         $cardId = self::getGameStateValue('played_card_id');
         $card = self::getDeck(self::getActivePlayerId())->getCard($cardId);
@@ -993,6 +1026,13 @@ class HogwartsBattle extends Table
 
     function stInitTurnEffects() {
         // nothing to do here. Meaning of this step is to get the args method called to have the current effects visible in the ui
+        $this->gamestate->nextState();
+    }
+
+    function stDarkArtsCardRevealed() {
+        $darkArtsCardsRevealed = self::getGameStateValue('dark_arts_cards_revealed') + 1;
+        self::setGameStateValue('dark_arts_cards_revealed', $darkArtsCardsRevealed);
+
         $this->gamestate->nextState();
     }
 

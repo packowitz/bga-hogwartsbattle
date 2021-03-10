@@ -149,6 +149,8 @@
 
   var jstpl_villain_damage = '<div id="${elementId}" class="large_attack_icon" style="position: absolute; top: 0; left: 0;"></div>';
 
+  var jstpl_dark_arts_card = '<div class="dark_arts_card" id="${elementId}" style="background-position: ${posX}% ${posY}%;"></div>';
+
 </script>
 
 {OVERALL_GAME_FOOTER}

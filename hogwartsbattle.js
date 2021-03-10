@@ -25,6 +25,8 @@ function (dojo, declare) {
     return declare("bgagame.hogwartsbattle", ebg.core.gamegui, {
         constructor: function(){
             console.log('hogwartsbattle constructor');
+            this.currentState = '';
+
             this.cardwidth = 200;
             this.cardheight = 280;
             this.cardsPerRow = 16;
@@ -185,6 +187,20 @@ function (dojo, declare) {
                     this.placeHogwartsCard(card_discarded, this.discard_piles[player_id], 'player_discard_' + player_id, player_id);
                 }
             }
+
+            // Dark Arts cards
+            this.darkArtsCards = new ebg.zone();
+            this.darkArtsCards.create(this, $('dark_arts_events'), this.cardheight * 0.5, this.cardheight * 0.5);
+
+            let toggledView = false;
+            for (let cardIdx in gamedatas.dark_arts_cards) {
+                if (!toggledView) {
+                    dojo.style('played_cards_wrapper', 'display', 'none');
+                    dojo.style('dark_arts_events_wrapper', 'display', 'inherit');
+                }
+                let card = gamedatas.dark_arts_cards[cardIdx];
+                this.placeDarkArtsCard(card);
+            }
             
             // Hogwarts cards
             this.hogwartsCards = new ebg.zone();
@@ -223,8 +239,19 @@ function (dojo, declare) {
         //
         onEnteringState: function (stateName, args) {
             console.log('Entering state: ' + stateName);
+            this.currentState = stateName;
 
             switch (stateName) {
+                case 'initTurn':
+                case 'revealDarkArtsCard':
+                    dojo.style('played_cards_wrapper', 'display', 'none');
+                    dojo.style('dark_arts_events_wrapper', 'display', 'inherit');
+                    break;
+                case 'beforePlayerTurn':
+                    this.darkArtsCards.removeAll();
+                    dojo.style('played_cards_wrapper', 'display', 'inherit');
+                    dojo.style('dark_arts_events_wrapper', 'display', 'none');
+                    break;
                 case 'initTurnEffects': {
                     console.log(args);
                     for (let idx in args.args) {
@@ -334,6 +361,11 @@ function (dojo, declare) {
                     this.addActionButton( 'button_3_id', _('Button 3 label'), 'onMyMethodToCall3' ); 
                     break;
 */
+                    case 'revealDarkArtsCard': {
+                        let label = args['reveal'] ? 'Reveal' : 'Done';
+                        this.addActionButton('revealId', label, 'onRevealDarkArtsCard');
+                        break;
+                    }
                     case 'playerTurn': {
                         this.addActionButton('endTurnId', 'End turn', 'onEndTurn');
                         break;
@@ -457,6 +489,19 @@ function (dojo, declare) {
             this.villainDropZones[slot].placeInZone(elementId);
         },
 
+        placeDarkArtsCard: function(card) {
+            let gameNr = parseInt(card.type);
+            let cardNr = parseInt(card.type_arg);
+            let elementId = 'dark_arts_card_' + card.id;
+            dojo.place(
+              this.format_block('jstpl_dark_arts_card', {
+                  elementId: elementId,
+                  posX: -200 * cardNr,
+                  posY: 150 * gameNr,
+              }), 'player_boards');
+            this.darkArtsCards.placeInZone(elementId);
+        },
+
         removeAttackTokenToVillain: function(slot, dmg) {
             let elementId = 'dmg_' + slot + '_' + dmg;
             this.villainDropZones[slot].removeFromZone(elementId);
@@ -500,7 +545,7 @@ function (dojo, declare) {
                 for (let idx in hogwartsCards) {
                     let card = hogwartsCards[idx];
                     this.placeHogwartsCard(card, this.playerHand, 'myhand', this.player_id);
-                    if (this.isCurrentPlayerActive()) {
+                    if (this.isCurrentPlayerActive() && this.currentState == 'playCard') {
                         let elementId = 'hogwarts_card_' + card.id + '_p' + this.player_id;
                         dojo.addClass(dojo.byId(elementId), 'can_play');
                         this.connect( $(elementId), 'onclick', 'onPlayHandCard');
@@ -614,6 +659,16 @@ function (dojo, declare) {
             _ make a call to the game server
         
         */
+
+        onRevealDarkArtsCard: function (evt) {
+            dojo.stopEvent(evt);
+            let action = 'revealDarkArtsCard';
+            if (this.checkAction(action, true)) {
+                this.ajaxcall(`/${this.game_name}/${this.game_name}/${action}.html`, {
+                    lock : true
+                }, this, function(result) {}, function(is_error) {});
+            }
+        },
 
         onEndTurn: function (evt) {
             dojo.stopEvent(evt);
@@ -748,6 +803,7 @@ function (dojo, declare) {
             dojo.subscribe('villainTurn', this, "notif_updatePlayerStats");
             dojo.subscribe('updatePlayerStats', this, "notif_updatePlayerStats");
             dojo.subscribe('effects', this, "notif_updateEffects");
+            dojo.subscribe('darkArtsCardRevealed', this, "notif_darkArtsCardRevealed");
         },
         
         // TODO: from this point and below, you can write your game notifications handling methods
@@ -872,6 +928,11 @@ function (dojo, declare) {
                 dojo.removeClass(villainDeckElem, 'villain_back');
                 dojo.addClass(villainDeckElem, 'villain_back_empty');
             }
+        },
+
+        notif_darkArtsCardRevealed: function(notif) {
+            let darkArtsCard = notif.args.darkArtsCard;
+            this.placeDarkArtsCard(darkArtsCard);
         },
    });
 });
