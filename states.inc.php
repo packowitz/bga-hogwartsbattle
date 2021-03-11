@@ -125,7 +125,7 @@ $machinestates = array(
             "acquireHogwartsCard" => 40,
             "villainAttacked" => 50,
             "villainDefeated" => 52,
-            "endTurn" => 70
+            "endTurn" => 80
         )
     ),
     41 => array(
@@ -182,28 +182,42 @@ $machinestates = array(
         "possibleactions" => array("decideEffectOption"),
         "transitions" => array("" => 53)
     ),
-    70 => array(
+    80 => array(
         "name" => "endTurn",
         "description" => "",
         "type" => "game",
         "action" => "stEndTurn",
-        "transitions" => array("revealVillain" => 73, "refillHandCards" => 75)
+        "transitions" => array("" => 81)
     ),
-    73 => array(
+    81 => array(
+        "name" => "endOfTurnActions",
+        "description" => "",
+        "type" => "game",
+        "action" => "stEndOfTurnActions",
+        "transitions" => array("revealLocation" => 83, "revealVillain" => 88, "refillHandCards" => 95)
+    ),
+    83 => array(
+        "name" => "revealLocation",
+        "description" => "",
+        "type" => "game",
+        "action" => "stRevealLocation",
+        "transitions" => array("revealed" => 81, "gameLost" => 99)
+    ),
+    88 => array(
         "name" => "revealVillain",
         "description" => "",
         "type" => "game",
         "action" => "stRevealVillain",
-        "transitions" => array("" => 75)
+        "transitions" => array("" => 95)
     ),
-    75 => array(
+    95 => array(
         "name" => "refillHandCards",
         "description" => "",
         "type" => "game",
         "action" => "stRefillHandCards",
-        "transitions" => array("" => 76)
+        "transitions" => array("" => 96)
     ),
-    76 => array(
+    96 => array(
         "name" => "cleanEffectsNextPlayer",
         "description" => "",
         "type" => "game",

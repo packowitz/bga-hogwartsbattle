@@ -63,7 +63,14 @@
                     <div>{LOCATION} <span id="location_number"></span>/<span id="location_total"></span></div>
                     <div><div class="icon location_icon"></div><span id="location_marker"></span>/<span id="location_marker_total"></span></div>
                 </h3>
-                <div id="location_image"></div>
+                <div id="location_image">
+                    <div class="location_tokens">
+                        <div id="location_pos_4_1" class="location_4_1"></div>
+                        <div id="location_pos_4_2" class="location_4_2"></div>
+                        <div id="location_pos_4_3" class="location_4_3"></div>
+                        <div id="location_pos_4_4" class="location_4_4"></div>
+                    </div>
+                </div>
             </div>
             <div class="whiteblock default_background big_card_wrapper">
                 <h3 class="flex-space-between">
@@ -133,6 +140,8 @@
 
   var jstpl_location = '<div id="${elementId}" class="location_card" style="background-position: ${posX}px ${posY}px;"></div>';
 
+  var jstpl_location_token = '<div id="${elementId}" class="icon location_icon" style="position: absolute; top: 0; left: 0;"></div>';
+
   var jstpl_active_villain =
     '<div class="whiteblock default_background big_card_wrapper" style="height: auto">\
         <h3 class="flex-space-between">\
@@ -149,7 +158,7 @@
 
   var jstpl_villain_damage = '<div id="${elementId}" class="large_attack_icon" style="position: absolute; top: 0; left: 0;"></div>';
 
-  var jstpl_dark_arts_card = '<div class="dark_arts_card" id="${elementId}" style="background-position: ${posX}% ${posY}%;"></div>';
+  var jstpl_dark_arts_card = '<div class="dark_arts_card" id="${elementId}" style="background-position: ${posX}px ${posY}px;"></div>';
 
 </script>
 

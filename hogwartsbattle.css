@@ -245,6 +245,45 @@
     filter: drop-shadow(2px 2px 2px #444);
 }
 
+.location_tokens {
+    position: absolute;
+    width: 200px;
+    height: 150px;
+    z-index: 10;
+}
+
+.location_4_1 {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    bottom: 7px;
+    left: 58px;
+}
+
+.location_4_2 {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    bottom: 12px;
+    left: 80px;
+}
+
+.location_4_3 {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    bottom: 7px;
+    left: 102px;
+}
+
+.location_4_4 {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    bottom: 12px;
+    left: 124px;
+}
+
 .villain_back {
     width: 200px;
     height: 150px;

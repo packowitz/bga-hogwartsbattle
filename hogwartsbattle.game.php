@@ -434,6 +434,10 @@ class HogwartsBattle extends Table
         return $this->locations[self::getGameStateValue('game_number')][self::getGameStateValue('location_number')];
     }
 
+    function isLocationFull() {
+        return self::getGameStateValue('location_marker') >= $this->getLocation()['max_tokens'];
+    }
+
     function getHealthIcon() {
         return '<div class="icon health_icon"></div>';
     }
@@ -444,6 +448,10 @@ class HogwartsBattle extends Table
 
     function getAttackIcon() {
         return '<div class="icon attack_icon"></div>';
+    }
+
+    function getLocationIcon() {
+        return '<div class="icon location_icon"></div>';
     }
 
     function getChooseOptions($choiceAction) {
@@ -754,6 +762,62 @@ class HogwartsBattle extends Table
         return $executionComplete;
     }
 
+    function executeDarkAction($action, $option = 0) {
+        $executionComplete = true;
+        switch ($action) {
+            case '1dmg':
+                $this->decreaseHealth(self::getActivePlayerId(), 1);
+                self::notifyAllPlayers('villainTurn', clienttranslate('${player_name} loses 1 ${health_icon}'),
+                    array (
+                        'players' => self::getPlayerStats(),
+                        'player_name' => self::getActivePlayerName(),
+                        'health_icon' => $this->getHealthIcon()
+                    )
+                );
+                break;
+            case '2dmg':
+                $this->decreaseHealth(self::getActivePlayerId(), 2);
+                self::notifyAllPlayers('villainTurn', clienttranslate('${player_name} loses 2 ${health_icon}'),
+                    array (
+                        'players' => self::getPlayerStats(),
+                        'player_name' => self::getActivePlayerName(),
+                        'health_icon' => $this->getHealthIcon()
+                    )
+                );
+                break;
+            case '1dmg_all':
+                foreach (self::loadPlayersBasicInfos() as $playerId => $player) {
+                    $this->decreaseHealth($playerId, 1);
+                }
+                self::notifyAllPlayers('villainTurn', clienttranslate('ALL Heroes lose 1 ${health_icon}'),
+                    array (
+                        'players' => self::getPlayerStats(),
+                        'health_icon' => $this->getHealthIcon()
+                    )
+                );
+                break;
+            case '+1loc_token':
+                if ($this->isLocationFull()) {
+                    self::notifyAllPlayers('locationFull', clienttranslate('Villains already controlling the Location'), array ());
+                } else {
+                    $marker = self::incGameStateValue('location_marker', 1);
+                    self::notifyAllPlayers('locationUpdate', clienttranslate('1 ${location_icon} was added to the Location'),
+                        array (
+                            'marker' => $marker,
+                            'location_icon' => $this->getLocationIcon()
+                        )
+                    );
+                }
+                break;
+            case '1dmg_1discard':
+                // TODO send player to choose a card to discard if he holds cards in his hand
+                break;
+            default:
+                self::notifyAllPlayers('unknown_dark_action', 'Unknown dark action: ' . $action, array ());
+        }
+        return $executionComplete;
+    }
+
 
 //////////////////////////////////////////////////////////////////////////////
 //////////// Player actions
@@ -779,6 +843,11 @@ class HogwartsBattle extends Table
                     'darkArtsCard' => $card
                 )
             );
+            if ($darkArtsCard->onPlay) {
+                $this->executeDarkAction($darkArtsCard->onPlay);
+
+                // TODO check if a hero is stunned
+            }
 
             $this->gamestate->nextState('revealed');
         } else {
@@ -1030,8 +1099,7 @@ class HogwartsBattle extends Table
     }
 
     function stDarkArtsCardRevealed() {
-        $darkArtsCardsRevealed = self::getGameStateValue('dark_arts_cards_revealed') + 1;
-        self::setGameStateValue('dark_arts_cards_revealed', $darkArtsCardsRevealed);
+        self::incGameStateValue('dark_arts_cards_revealed', 1);
 
         $this->gamestate->nextState();
     }
@@ -1057,22 +1125,13 @@ class HogwartsBattle extends Table
     function stVillainTurn() {
         $activeVillainId = self::getGameStateValue('villain_turn_id');
         $villainCard = $this->villainCardsLibrary->villainCards[$activeVillainId];
-        switch ($villainCard->ability) {
-            case '1dmg':
-                $this->decreaseHealth(self::getActivePlayerId(), 1);
-                self::notifyAllPlayers(
-                    'villainTurn',
-                    clienttranslate('${player_name} loses 1 ${health_icon} due to ${villain_name}\'s ability'),
-                    array (
-                        'players' => self::getPlayerStats(),
-                        'villain_name' => $villainCard->name,
-                        'player_name' => self::getActivePlayerName(),
-                        'health_icon' => $this->getHealthIcon()
-                    )
-                );
-                break;
-            default:
-                self::notifyAllPlayers('unknown_ability', 'Unknown villain ability: ' . $villainCard->effect, array ());
+        if ($villainCard->ability != null) {
+            self::notifyAllPlayers('villain_ability', '<b>${villain_name}</b> ' . clienttranslate('\'s ability resolves'),
+                array (
+                    'villain_name' => $villainCard->name
+                )
+            );
+            $this->executeDarkAction($villainCard->ability);
         }
 
         // TODO check if a player is stunned
@@ -1219,10 +1278,38 @@ class HogwartsBattle extends Table
                 'player_name' => self::getActivePlayerName(),
             )
         );
-        if ($this->villainCards->countCardInLocation('deck') > 0 && $this->villainCards->countCardInLocation('hand') < self::getGameStateValue('villains_max')) {
+        $this->gamestate->nextState();
+    }
+
+    function stEndOfTurnActions() {
+        if ($this->isLocationFull()) {
+            $this->gamestate->nextState('revealLocation');
+        } else if ($this->villainCards->countCardInLocation('deck') > 0 && $this->villainCards->countCardInLocation('hand') < self::getGameStateValue('villains_max')) {
             $this->gamestate->nextState('revealVillain');
         } else {
             $this->gamestate->nextState('refillHandCards');
+        }
+    }
+
+    function stRevealLocation() {
+        $locationNumber = self::getGameStateValue('location_number');
+        $locationTotal = self::getGameStateValue('location_total');
+        if ($locationNumber < $locationTotal) {
+            $locationNumber ++;
+            self::setGameStateValue('location_number', $locationNumber);
+            self::setGameStateValue('location_marker', 0); // TODO game option to have new location start with 1 or 2 tokens
+
+            self::notifyAllPlayers('locationRevealed', clienttranslate('New Location revealed'),
+                array (
+                    'location_number' => $locationNumber,
+                    'location_marker_total' => $this->locations[self::getGameStateValue('game_number')][$locationNumber]['max_tokens'],
+                    'location_marker' => 0
+                )
+            );
+
+            $this->gamestate->nextState('revealed');
+        } else {
+            $this->gamestate->nextState('gameLost');
         }
     }
 

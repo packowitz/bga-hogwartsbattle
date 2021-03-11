@@ -99,9 +99,13 @@ function (dojo, declare) {
             dojo.place(
               this.format_block( 'jstpl_location', {
                   elementId: 'location_image_' + this.locationNr,
-                  posX: (this.locationNr - 1) * 187.5,
-                  posY: (this.gameNr - 1) * 140,
+                  posX: (this.locationNr - 1) * 200,
+                  posY: (this.gameNr - 1) * 150,
               }), 'location_image');
+
+            for (let i = 1; i <= this.locationMarker; i++) {
+                this.placeMarkerToLocation(i);
+            }
 
             // Villains
             this.villainsMax = gamedatas.villains_max;
@@ -496,8 +500,8 @@ function (dojo, declare) {
             dojo.place(
               this.format_block('jstpl_dark_arts_card', {
                   elementId: elementId,
-                  posX: -200 * cardNr,
-                  posY: 150 * gameNr,
+                  posX: -140 * cardNr,
+                  posY: 140 * gameNr,
               }), 'player_boards');
             this.darkArtsCards.placeInZone(elementId);
         },
@@ -643,6 +647,30 @@ function (dojo, declare) {
             if (idx >= 0) {
                 this.visibleEffectIds.splice(idx, 1);
             }
+        },
+
+        updateLocationMarker: function(marker) {
+            let markerBefore = this.location_marker_counter.getValue();
+            let diff = marker - markerBefore;
+            this.location_marker_counter.incValue(diff);
+            if (diff > 0) {
+                for (let i = (markerBefore + 1); i <= marker; i++) {
+                    this.placeMarkerToLocation(i);
+                }
+            }
+            if (diff < 0) {
+                //TODO slide location marker away
+            }
+        },
+
+        placeMarkerToLocation: function(nr) {
+            let elementId = 'location_' + this.locationMarkerTotal + '_' + nr;
+            dojo.place(this.format_block( 'jstpl_location_token', {
+                elementId: elementId
+            }), 'player_boards');
+            let locationPosId = 'location_pos_' + this.locationMarkerTotal + '_' + nr;
+            this.attachToNewParent(elementId, locationPosId);
+            this.slideToObject(elementId, locationPosId, 1000).play();
         },
 
 
@@ -804,24 +832,9 @@ function (dojo, declare) {
             dojo.subscribe('updatePlayerStats', this, "notif_updatePlayerStats");
             dojo.subscribe('effects', this, "notif_updateEffects");
             dojo.subscribe('darkArtsCardRevealed', this, "notif_darkArtsCardRevealed");
+            dojo.subscribe('locationUpdate', this, "notif_locationUpdate");
+            dojo.subscribe('locationRevealed', this, "notif_locationRevealed");
         },
-        
-        // TODO: from this point and below, you can write your game notifications handling methods
-        
-        /*
-        Example:
-        
-        notif_cardPlayed: function( notif )
-        {
-            console.log( 'notif_cardPlayed' );
-            console.log( notif );
-            
-            // Note: notif.args contains the arguments specified during you "notifyAllPlayers" / "notifyPlayer" PHP call
-            
-            // TODO: play the card in the user interface.
-        },    
-        
-        */
 
         notif_endTurn: function(notif) {
             // discard played cards
@@ -933,6 +946,29 @@ function (dojo, declare) {
         notif_darkArtsCardRevealed: function(notif) {
             let darkArtsCard = notif.args.darkArtsCard;
             this.placeDarkArtsCard(darkArtsCard);
+        },
+
+        notif_locationUpdate: function(notif) {
+            this.updateLocationMarker(notif.args.marker);
+        },
+
+        notif_locationRevealed: function(notif) {
+            this.fadeOutAndDestroy('location_image_' + this.locationNr);
+
+            this.locationNr = notif.args.location_number;
+            this.locationMarkerTotal = notif.args.location_marker_total;
+            $('location_marker_total').innerHTML = this.locationMarkerTotal;
+            this.location_counter.setValue(notif.args.location_marker);
+
+            dojo.place(
+              this.format_block( 'jstpl_location', {
+                  elementId: 'location_image_' + this.locationNr,
+                  posX: (this.locationNr - 1) * 200,
+                  posY: (this.gameNr - 1) * 150,
+              }), 'player_boards');
+
+            this.attachToNewParent('location_image_' + this.locationNr, 'location_image');
+            this.slideToObject('location_image_' + this.locationNr, 'location_image', 1000).play();
         },
    });
 });
