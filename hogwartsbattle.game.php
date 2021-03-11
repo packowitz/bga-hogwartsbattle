@@ -30,9 +30,11 @@ class HogwartsBattle extends Table
     private static $TRIGGER_ON_DEFEAT_VILLAIN = 'onDefeatVillain';
     private static $TRIGGER_ON_DMG_DARK_ARTS_OR_VILLAIN = 'onDmgDarkArtsOrVillain';
     private static $TRIGGER_ON_LOCATION_TOKEN = 'onLocationToken';
+    private static $TRIGGER_ON_DRAW_CARD = 'onDrawCard';
 
     private static $SOURCE_HOGWARTS_CARD = 'hogwartsCard';
     private static $SOURCE_VILLAIN = 'villain';
+    private static $SOURCE_DARK_ARTS_CARD = 'darkArtsCard';
 
 	function __construct( )
 	{
@@ -807,6 +809,10 @@ class HogwartsBattle extends Table
                             'location_icon' => $this->getLocationIcon()
                         )
                     );
+                    $effects = $this->getActiveEffects(self::$TRIGGER_ON_LOCATION_TOKEN);
+                    foreach ($effects as $effectId => $effect) {
+                        $this->executeDarkAction($effect['effect_key']);
+                    }
                 }
                 break;
             case '1dmg_1discard':
@@ -843,7 +849,17 @@ class HogwartsBattle extends Table
                     'darkArtsCard' => $card
                 )
             );
-            if ($darkArtsCard->onPlay) {
+            if ($darkArtsCard->effect != null) {
+                switch ($darkArtsCard->effect) {
+                    case 'no_draw_cards':
+                        $this->addEffect('no_draw_cards', self::$TRIGGER_ON_DRAW_CARD, $darkArtsCard->name, self::$SOURCE_DARK_ARTS_CARD, $card['id'], $darkArtsCard->id);
+                        break;
+                    default:
+                        self::notifyAllPlayers('unknown_effect', 'Unknown dark arts effect: ' . $darkArtsCard->effect, array ());
+                }
+                self::notifyAllPlayers('effects', '', array('effects' => $this->getActiveEffects()));
+            }
+            if ($darkArtsCard->onPlay != null) {
                 $this->executeDarkAction($darkArtsCard->onPlay);
 
                 // TODO check if a hero is stunned
@@ -1242,7 +1258,7 @@ class HogwartsBattle extends Table
         foreach ($effects as $effectId => $effect) {
 
             $executionComplete = $this->executeAction($effect['effect_key']);
-            if ($executionComplete) {
+            if (!$executionComplete) {
                 self::setGameStateValue('effect_id_with_option', $effectId);
                 $this->gamestate->nextState('chooseEffectOption');
                 return;

@@ -148,6 +148,14 @@
     background-position: 40% 100%;
 }
 
+.on_location_token {
+    background-position: 0 0;
+}
+
+.on_draw_card {
+    background-position: 80% 0;
+}
+
 .large_attack_icon {
     width: 40px;
     height: 40px;

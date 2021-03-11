@@ -596,10 +596,12 @@ function (dojo, declare) {
                 case 'health': return '<div class="icon health_icon"></div>';
                 case 'card': return '<div class="icon hand_cards_icon"></div>';
                 case 'onHand': return '<div class="icon on_hand_icon"></div>';
+                case 'onDrawCard': return '<div class="icon on_draw_card"></div>';
                 case 'onDiscard': return '<div class="icon on_discard_icon"></div>';
                 case 'onAcquire': return '<div class="icon on_acquire_icon"></div>';
                 case 'onDefeatVillain': return '<div class="icon on_defeat_villain_icon"></div>';
                 case 'onDmgDarkArtsOrVillain': return '<div class="icon on_loose_health_icon"></div>';
+                case 'onLocationToken': return '<div class="icon on_location_token"></div>';
             }
         },
 
