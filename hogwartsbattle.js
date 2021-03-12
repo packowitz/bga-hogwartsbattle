@@ -26,6 +26,7 @@ function (dojo, declare) {
         constructor: function(){
             console.log('hogwartsbattle constructor');
             this.currentState = '';
+            this.currentPlayerId = '';
 
             this.cardwidth = 200;
             this.cardheight = 280;
@@ -76,9 +77,12 @@ function (dojo, declare) {
         {
             console.log( "Starting game setup" );
 
+            this.currentPlayerId = this.player_id;
+
             this.gameNr = gamedatas.game_number;
             this.hogwartsCardDescriptions = gamedatas.hogwarts_cards_descriptions;
             this.villainDescriptions = gamedatas.villain_descriptions;
+            this.darkArtsDescriptions = gamedatas.dark_arts_descriptions;
 
             this.locationTotal = gamedatas.location_total;
             $('location_total').innerHTML = this.locationTotal;
@@ -246,8 +250,9 @@ function (dojo, declare) {
             this.currentState = stateName;
 
             switch (stateName) {
-                case 'initTurn':
                 case 'revealDarkArtsCard':
+                    this.currentPlayerId = this.getActivePlayerId();
+                case 'initTurn':
                     dojo.style('played_cards_wrapper', 'display', 'none');
                     dojo.style('dark_arts_events_wrapper', 'display', 'inherit');
                     break;
@@ -483,27 +488,30 @@ function (dojo, declare) {
               }), 'villain_deck');
             this.attachToNewParent('villain_' + villainId, 'active_villain_' + slot);
             this.slideToObject('villain_' + villainId, 'active_villain_' + slot, 1000).play();
+            this.addVillainCardTooltip('villain_' + villainId, villainId);
         },
 
         placeAttackTokenToVillain: function(slot, dmg) {
             let elementId = 'dmg_' + slot + '_' + dmg;
             dojo.place(this.format_block( 'jstpl_villain_damage', {
                 elementId: elementId
-            }), 'overall_player_board_' + this.player_id);
+            }), 'overall_player_board_' + this.currentPlayerId);
             this.villainDropZones[slot].placeInZone(elementId);
         },
 
         placeDarkArtsCard: function(card) {
             let gameNr = parseInt(card.type);
             let cardNr = parseInt(card.type_arg);
+            let cardTypeId = (gameNr * 100) + cardNr;
             let elementId = 'dark_arts_card_' + card.id;
             dojo.place(
               this.format_block('jstpl_dark_arts_card', {
                   elementId: elementId,
                   posX: -140 * cardNr,
                   posY: 140 * gameNr,
-              }), 'player_boards');
+              }), 'overall_player_board_' + this.currentPlayerId);
             this.darkArtsCards.placeInZone(elementId);
+            this.addDarkArtsCardTooltip(elementId, cardTypeId);
         },
 
         removeAttackTokenToVillain: function(slot, dmg) {
@@ -578,6 +586,26 @@ function (dojo, declare) {
             }));
         },
 
+        addVillainCardTooltip: function(elementId, villainId) {
+            let cardDesc = this.villainDescriptions[villainId];
+            this.addTooltipHtml(elementId, this.format_block('jstpl_villain_tooltip', {
+                villainName: cardDesc.name,
+                description: this.textToIconSubstitute(cardDesc.desc),
+                posX: -375 * cardDesc.cardNr,
+                posY: 280 * cardDesc.gameNr,
+            }));
+        },
+
+        addDarkArtsCardTooltip: function(elementId, cardType) {
+            let cardDesc = this.darkArtsDescriptions[cardType];
+            this.addTooltipHtml(elementId, this.format_block('jstpl_dark_arts_tooltip', {
+                cardName: cardDesc.name,
+                description: this.textToIconSubstitute(cardDesc.desc),
+                posX: -280 * cardDesc.cardNr,
+                posY: 280 * cardDesc.gameNr,
+            }));
+        },
+
         textToIconSubstitute: function(text) {
             if (!text) {
                 return '';
@@ -585,7 +613,8 @@ function (dojo, declare) {
             return dojo.string.substitute(text, {
                 influence_token: this.getIcon('influence'),
                 attack_token: this.getIcon('attack'),
-                health_icon: this.getIcon('health')
+                health_icon: this.getIcon('health'),
+                location_token: this.getIcon('location')
             });
         },
 
@@ -595,6 +624,7 @@ function (dojo, declare) {
                 case 'attack': return '<div class="icon attack_icon"></div>';
                 case 'health': return '<div class="icon health_icon"></div>';
                 case 'card': return '<div class="icon hand_cards_icon"></div>';
+                case 'location': return '<div class="icon location_icon"></div>';
                 case 'onHand': return '<div class="icon on_hand_icon"></div>';
                 case 'onDrawCard': return '<div class="icon on_draw_card"></div>';
                 case 'onDiscard': return '<div class="icon on_discard_icon"></div>';
@@ -639,7 +669,13 @@ function (dojo, declare) {
                   icon: this.getIcon(effect.effect_trigger),
               }), 'active_effects');
             this.visibleEffectIds.push(effect.id);
-            this.addHogwartsCardTooltip('active_effect_' + effect.id, effect.source_card_id);
+            if (effect.source == 'hogwartsCard') {
+                this.addHogwartsCardTooltip('active_effect_' + effect.id, effect.source_card_id);
+            } else if (effect.source == 'villain') {
+                this.addVillainCardTooltip('active_effect_' + effect.id, effect.source_id)
+            } else if (effect.source == 'darkArtsCard') {
+
+            }
 
         },
 
@@ -669,7 +705,7 @@ function (dojo, declare) {
             let elementId = 'location_' + this.locationMarkerTotal + '_' + nr;
             dojo.place(this.format_block( 'jstpl_location_token', {
                 elementId: elementId
-            }), 'player_boards');
+            }), 'overall_player_board_' + this.currentPlayerId);
             let locationPosId = 'location_pos_' + this.locationMarkerTotal + '_' + nr;
             this.attachToNewParent(elementId, locationPosId);
             this.slideToObject(elementId, locationPosId, 1000).play();
@@ -836,6 +872,7 @@ function (dojo, declare) {
             dojo.subscribe('darkArtsCardRevealed', this, "notif_darkArtsCardRevealed");
             dojo.subscribe('locationUpdate', this, "notif_locationUpdate");
             dojo.subscribe('locationRevealed', this, "notif_locationRevealed");
+            dojo.subscribe('acquirableHogwartsCards', this, "notif_acquirableHogwartsCards");
         },
 
         notif_endTurn: function(notif) {
@@ -865,9 +902,6 @@ function (dojo, declare) {
         },
 
         notif_cardPlayed: function(notif) {
-            this.acquirableHogwartsCards = notif.args.acquirable_hogwarts_cards;
-            this.checkAcquirableHogwartsCards();
-
             if (this.player_id == notif.args.player_id) {
                 let cardElemId = 'hogwarts_card_' + notif.args.card_id + '_p' + notif.args.player_id;
                 this.playerHand.removeFromZone(cardElemId);
@@ -915,8 +949,12 @@ function (dojo, declare) {
             this.checkActiveEffects(notif.args.effects);
         },
 
+        notif_acquirableHogwartsCards: function(notif) {
+            this.acquirableHogwartsCards = notif.args.acquirable_hogwarts_cards;
+            this.checkAcquirableHogwartsCards();
+        },
+
         notif_villainDefeated: function(notif) {
-            this.updatePlayerStats(notif.args.players)
             this.checkActiveEffects(notif.args.effects);
             let slot = notif.args.villain_slot;
             let villainId = notif.args.villain_id;
@@ -967,7 +1005,7 @@ function (dojo, declare) {
                   elementId: 'location_image_' + this.locationNr,
                   posX: (this.locationNr - 1) * 200,
                   posY: (this.gameNr - 1) * 150,
-              }), 'player_boards');
+              }), 'overall_player_board_' + this.currentPlayerId);
 
             this.attachToNewParent('location_image_' + this.locationNr, 'location_image');
             this.slideToObject('location_image_' + this.locationNr, 'location_image', 1000).play();

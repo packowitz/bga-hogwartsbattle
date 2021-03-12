@@ -33,7 +33,7 @@ class VillainCards {
             0 => new VillainCard(0, 0, clienttranslate('Draco Malfoy'), 6, '2dmg_onLocationToken', null, '-1loc_token',
                 clienttranslate('Each time ${location_token} is added to the Location, active Hero loses 2 ${health_icon}')),
 
-            1 => new VillainCard(0, 1, clienttranslate('Crabbe & Goyle'), 5, '1dmg_onDiscard', null, '+card_all',
+            1 => new VillainCard(0, 1, clienttranslate('Crabbe & Goyle'), 5, '1dmg_onDiscard', null, '+1card_all',
                 clienttranslate('Each time a Dark Arts event or Villain causes a Hero to discard a card, that Hero loses 1 ${health_icon}')),
 
             2 => new VillainCard(0, 2, clienttranslate('Quirinus Quirrell'), 6, null, '1dmg', '+1inf_+1hp_all',

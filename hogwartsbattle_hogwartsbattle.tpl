@@ -123,7 +123,7 @@
   var jstpl_hogwarts_card = '<div class="hogwarts_card" id="${elementId}" data-card-id="${cardId}" data-card-type-id="${cardTypeId}" style="background-position: ${posX}% ${posY}%; position: absolute; top: 0; left: 0;"></div>';
 
   var jstpl_hogwarts_card_tooltip =
-    '<div class="hogwarts_card_tooltip">\
+    '<div class="card_tooltip">\
         <h3>${cardName}</h3>\
         <div class="separator_line" style="margin-bottom: 4px;"></div>\
         ${description}\
@@ -131,6 +131,22 @@
     </div>';
 
   var jstpl_tooltip_text = '<div style="display: flex; align-items: center; flex-wrap: wrap; max-width: 200px; margin-top: 4px;"><div>${text}</div></div>';
+
+  var jstpl_villain_tooltip =
+    '<div class="card_tooltip">\
+        <h3>${villainName}</h3>\
+        <div class="separator_line" style="margin-bottom: 4px;"></div>\
+            <div style="max-width: 375px;">${description}</div>\
+        <div class="villain_card_large" style="margin: 4px; background-position: ${posX}px ${posY}px;"></div>\
+    </div>';
+
+  var jstpl_dark_arts_tooltip =
+    '<div class="card_tooltip">\
+        <h3>${cardName}</h3>\
+        <div class="separator_line" style="margin-bottom: 4px;"></div>\
+            <div style="max-width: 280px;">${description}</div>\
+        <div class="dark_arts_card_large" style="margin: 4px; background-position: ${posX}px ${posY}px;"></div>\
+    </div>';
 
   var jstpl_active_effect =
     '<div class="active_effect" id="${elementId}" data-effect-id="${effectId}">\

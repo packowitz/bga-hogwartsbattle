@@ -24,7 +24,6 @@ require_once('darkArtsCards.php');
 
 class HogwartsBattle extends Table
 {
-    private static $TRIGGER_ON_HAND = 'onHand';
     private static $TRIGGER_ON_DISCARD = 'onDiscard';
     private static $TRIGGER_ON_ACQUIRE = 'onAcquire';
     private static $TRIGGER_ON_DEFEAT_VILLAIN = 'onDefeatVillain';
@@ -231,6 +230,8 @@ class HogwartsBattle extends Table
         $result['active_player'] = self::getActivePlayerId();
 
         $result['hogwarts_cards_descriptions'] = $this->hogwartsCardsLibrary->hogwartsCards;
+        $result['villain_descriptions'] = $this->villainCardsLibrary->villainCards;
+        $result['dark_arts_descriptions'] = $this->darkArtsCardsLibrary->darkArtsCards;
 
         $result['hand'] = $this->getDeck($current_player_id)->getCardsInLocation('hand');
 
@@ -245,8 +246,6 @@ class HogwartsBattle extends Table
         if ($isActivePlayer == true) {
             $result['acquirable_hogwarts_cards'] = $this->getAcquirableHogwartsCards($current_player_id);
         }
-
-        $result['villain_descriptions'] = $this->villainCardsLibrary->villainCards;
 
         $result['villains_max'] = self::getGameStateValue('villains_max');
         $result['villains_left'] = $this->villainCards->countCardInLocation('deck');
@@ -322,7 +321,7 @@ class HogwartsBattle extends Table
     }
 
     function getActiveEffects($trigger = null) {
-        $sql = "SELECT effect_id id, effect_key, effect_trigger, effect_name name, effect_source source, effect_source_id source_id, effect_source_card_id source_card_id FROM effect";
+        $sql = "SELECT effect_id id, effect_key, effect_trigger, effect_name name, effect_source source, effect_source_id source_id, effect_source_card_id source_card_id, effect_hero_id hero_id FROM effect";
         if ($trigger != null) {
             $sql .= " WHERE effect_resolved is false and effect_trigger = '$trigger'";
         }
@@ -330,7 +329,7 @@ class HogwartsBattle extends Table
     }
 
     function getEffectById($effectId) {
-        $sql = "SELECT effect_id id, effect_key, effect_trigger, effect_name name, effect_source source, effect_source_id source_id, effect_source_card_id source_card_id FROM effect WHERE effect_id = $effectId";
+        $sql = "SELECT effect_id id, effect_key, effect_trigger, effect_name name, effect_source source, effect_source_id source_id, effect_source_card_id source_card_id, effect_hero_id hero_id FROM effect WHERE effect_id = $effectId";
         return self::getCollectionFromDb($sql);
     }
 
@@ -342,12 +341,20 @@ class HogwartsBattle extends Table
         self::DbQuery("UPDATE effect SET effect_resolved = false");
     }
 
-    function addEffect($effect_key, $effect_trigger, $name, $source, $source_id, $source_card_id) {
-        self::DbQuery("INSERT INTO effect(effect_key, effect_trigger, effect_name, effect_source, effect_source_id, effect_source_card_id) VALUES('$effect_key', '$effect_trigger', '$name', '$source', '$source_id', '$source_card_id')");
+    function addEffect($effect_key, $effect_trigger, $name, $source, $source_id, $source_card_id, $hero_id = null) {
+        $sql = "INSERT INTO effect(effect_key, effect_trigger, effect_name, effect_source, effect_source_id, effect_source_card_id, effect_hero_id) VALUES ".
+            "('$effect_key', '$effect_trigger', '$name', '$source', '$source_id', '$source_card_id', ";
+        if ($hero_id == null) {
+            $sql .= "null";
+        } else {
+            $sql .= "'$hero_id'";
+        }
+        $sql .= ")";
+        self::DbQuery($sql);
     }
 
-    function removeEffects($source, $source_id) {
-        self::DbQuery("DELETE FROM effect WHERE effect_source = '$source' and effect_source_id = '$source_id'");
+    function removeEffects($source, $source_id, $heroId) {
+        self::DbQuery("DELETE FROM effect WHERE effect_source = '$source' and effect_source_id = '$source_id' and effect_hero_id = '$heroId'");
     }
 
     function clearAllEffects() {
@@ -440,6 +447,10 @@ class HogwartsBattle extends Table
         return self::getGameStateValue('location_marker') >= $this->getLocation()['max_tokens'];
     }
 
+    function isLocationEmpty() {
+        return self::getGameStateValue('location_marker') == 0;
+    }
+
     function getHealthIcon() {
         return '<div class="icon health_icon"></div>';
     }
@@ -454,6 +465,23 @@ class HogwartsBattle extends Table
 
     function getLocationIcon() {
         return '<div class="icon location_icon"></div>';
+    }
+
+    function drawCard($playerIds, $numberOfCards) {
+        // check if there is an effect in place that prevents card drawing
+        $effects = $this->getActiveEffects(self::$TRIGGER_ON_DRAW_CARD);
+        foreach ($effects as $effectId => $effect) {
+            if ($effect['effect_key'] == 'no_draw_cards') {
+                self::notifyAllPlayers('log', clienttranslate('${effect_name} prevents card drawing'),
+                    array ('i18n' => array('effect_name'))
+                );
+                return;
+            }
+        }
+        foreach ($playerIds as $playerId) {
+            $newHandCards = self::getDeck($playerId)->pickCards($numberOfCards, 'deck', $playerId);
+            self::notifyPlayer($playerId, 'newHandCards', '', array('new_hand_cards' => $newHandCards));
+        }
     }
 
     function getChooseOptions($choiceAction) {
@@ -486,44 +514,28 @@ class HogwartsBattle extends Table
         $executionComplete = true;
         switch ($action) {
             case '+1inf':
-                $this->gainInfluence(self::getActivePlayerId(), 1);
-                self::notifyAllPlayers('updatePlayerStats', clienttranslate('${player_name} gains 1 ${influence_icon}'),
-                    array (
-                        'player_name' => self::getActivePlayerName(),
-                        'players' => $this->getPlayerStats(),
-                        'influence_icon' => $this->getInfluenceIcon()
-                    )
+                self::notifyAllPlayers('log', clienttranslate('${player_name} gains 1 ${influence_icon}'),
+                    array ('player_name' => self::getActivePlayerName(), 'influence_icon' => $this->getInfluenceIcon())
                 );
+                $this->gainInfluence(self::getActivePlayerId(), 1);
                 break;
             case '+2inf':
-                $this->gainInfluence(self::getActivePlayerId(), 2);
-                self::notifyAllPlayers('updatePlayerStats', clienttranslate('${player_name} gains 2 ${influence_icon}'),
-                    array (
-                        'player_name' => self::getActivePlayerName(),
-                        'players' => $this->getPlayerStats(),
-                        'influence_icon' => $this->getInfluenceIcon()
-                    )
+                self::notifyAllPlayers('log', clienttranslate('${player_name} gains 2 ${influence_icon}'),
+                    array ('player_name' => self::getActivePlayerName(), 'influence_icon' => $this->getInfluenceIcon())
                 );
+                $this->gainInfluence(self::getActivePlayerId(), 2);
                 break;
             case '+1att':
-                $this->gainAttack(self::getActivePlayerId(), 1);
-                self::notifyAllPlayers('updatePlayerStats', clienttranslate('${player_name} gains 1 ${attack_icon}'),
-                    array (
-                        'player_name' => self::getActivePlayerName(),
-                        'players' => $this->getPlayerStats(),
-                        'attack_icon' => $this->getAttackIcon()
-                    )
+                self::notifyAllPlayers('log', clienttranslate('${player_name} gains 1 ${attack_icon}'),
+                    array ('player_name' => self::getActivePlayerName(), 'attack_icon' => $this->getAttackIcon())
                 );
+                $this->gainAttack(self::getActivePlayerId(), 1);
                 break;
             case '+2att':
-                $this->gainAttack(self::getActivePlayerId(), 2);
-                self::notifyAllPlayers('updatePlayerStats', clienttranslate('${player_name} gains 2 ${attack_icon}'),
-                    array (
-                        'player_name' => self::getActivePlayerName(),
-                        'players' => $this->getPlayerStats(),
-                        'attack_icon' => $this->getAttackIcon()
-                    )
+                self::notifyAllPlayers('log', clienttranslate('${player_name} gains 2 ${attack_icon}'),
+                    array ('player_name' => self::getActivePlayerName(), 'attack_icon' => $this->getAttackIcon())
                 );
+                $this->gainAttack(self::getActivePlayerId(), 2);
                 break;
             case '+1inf_+1att_xAllyPlayed':
                 $playerId = self::getActivePlayerId();
@@ -535,231 +547,207 @@ class HogwartsBattle extends Table
                         $attack ++;
                     }
                 }
-                $this->gainAttack($playerId, $attack);
-                self::notifyAllPlayers('updatePlayerStats', clienttranslate('${player_name} gains 1 {influence_icon} and ${attack} ${attack_icon}'),
+                self::notifyAllPlayers('log', clienttranslate('${player_name} gains 1 {influence_icon} and ${attack} ${attack_icon}'),
                     array (
                         'player_name' => self::getActivePlayerName(),
-                        'players' => $this->getPlayerStats(),
                         'attack' => $attack,
                         'attack_icon' => $this->getAttackIcon(),
                         'influence_icon' => $this->getInfluenceIcon()
                     )
                 );
+                $this->gainAttack($playerId, $attack);
+                break;
+            case '+1inf_+1hp_all':
+                self::notifyAllPlayers('log', clienttranslate('ALL Heroes gain 1 ${influence_icon} and 1 ${health_icon}'),
+                    array ('influence_icon' => $this->getInfluenceIcon(), 'health_icon' => $this->getHealthIcon())
+                );
+                foreach ($this->getAllPlayerHealth() as $playerId => $player) {
+                    $this->gainInfluence($playerId, 1);
+                    $healing = min(array(10 - $player['health'], 1));
+                    $this->gainHealth($playerId, $healing);
+                }
                 break;
             case '+1hp':
                 $playerId = self::getActivePlayerId();
                 $healing = min(array(10 - $this->getHealth($playerId), 1));
-                $this->gainHealth($playerId, $healing);
-                self::notifyAllPlayers('updatePlayerStats', clienttranslate('${player_name} gains ${healing} ${health_icon}'),
+                self::notifyAllPlayers('log', clienttranslate('${player_name} gains ${healing} ${health_icon}'),
                     array (
                         'player_name' => self::getActivePlayerName(),
-                        'players' => $this->getPlayerStats(),
                         'healing' => $healing,
                         'health_icon' => $this->getHealthIcon()
                     )
                 );
+                $this->gainHealth($playerId, $healing);
                 break;
             case '+1hp_all':
+                self::notifyAllPlayers('log', clienttranslate('ALL Heroes gain 1 ${health_icon}'),
+                    array ('health_icon' => $this->getHealthIcon())
+                );
                 foreach ($this->getAllPlayerHealth() as $playerId => $player) {
                     $healing = min(array(10 - $player['health'], 1));
                     $this->gainHealth($playerId, $healing);
                 }
-                self::notifyAllPlayers('updatePlayerStats', clienttranslate('ALL Heroes gain 1 ${health_icon}'),
-                    array (
-                        'players' => $this->getPlayerStats(),
-                        'health_icon' => $this->getHealthIcon()
-                    )
-                );
                 break;
             case '+1card':
-                $playerId = self::getActivePlayerId();
-                $newHandCards = self::getDeck($playerId)->pickCards(1, 'deck', $playerId);
-                self::notifyPlayer($playerId, 'newHandCards', '', array('new_hand_cards' => $newHandCards));
-                self::notifyAllPlayers('updatePlayerStats', clienttranslate('${player_name} draws a card'),
-                    array (
-                        'player_name' => self::getActivePlayerName(),
-                        'players' => $this->getPlayerStats(),
-                    )
-                );
+                self::notifyAllPlayers('log', clienttranslate('${player_name} draws a card'), array('player_name' => self::getActivePlayerName()));
+                $this->drawCard(array(self::getActivePlayerId()), 1);
                 break;
             case '+1card_all':
+                self::notifyAllPlayers('log', clienttranslate('ALL Heroes draw a card'), array());
+                $playerIds = array();
                 foreach (self::loadPlayersBasicInfos() as $playerId => $player) {
-                    $newHandCards = $this->getDeck($playerId)->pickCards(1, 'deck', $playerId);
-                    self::notifyPlayer($playerId, 'newHandCards', '', array('new_hand_cards' => $newHandCards));
+                    $playerIds[] = $playerId;
                 }
-                self::notifyAllPlayers('updatePlayerStats', clienttranslate('ALL Heroes draw a card'),
-                    array (
-                        'players' => $this->getPlayerStats()
-                    )
-                );
+                $this->drawCard($playerIds, 1);
                 break;
             case '+1att_+1card':
+                self::notifyAllPlayers('log', clienttranslate('${player_name} gains 1 ${attack_icon} and draws a card'),
+                    array('player_name' => self::getActivePlayerName(), 'attack_icon' => $this->getAttackIcon())
+                );
                 $playerId = self::getActivePlayerId();
                 $this->gainAttack($playerId, 1);
-                $newHandCards = self::getDeck($playerId)->pickCards(1, 'deck', $playerId);
-                self::notifyPlayer($playerId, 'newHandCards', '', array('new_hand_cards' => $newHandCards));
-                self::notifyAllPlayers('updatePlayerStats', clienttranslate('${player_name} gains 1 ${attack_icon} and draws a card'),
-                    array (
-                        'player_name' => self::getActivePlayerName(),
-                        'players' => $this->getPlayerStats(),
-                        'attack_icon' => $this->getAttackIcon()
-                    )
-                );
+                $this->drawCard(array($playerId), 1);
                 break;
             case '+1att_+1hp':
                 $playerId = self::getActivePlayerId();
-                $this->gainAttack($playerId, 1);
                 $healing = min(array(10 - $this->getHealth($playerId), 1));
-                $this->gainHealth($playerId, $healing);
-                self::notifyAllPlayers('updatePlayerStats', clienttranslate('${player_name} gains 1 {attack_icon} and ${healing} ${health_icon}'),
+                self::notifyAllPlayers('log', clienttranslate('${player_name} gains 1 {attack_icon} and ${healing} ${health_icon}'),
                     array (
                         'player_name' => self::getActivePlayerName(),
-                        'players' => $this->getPlayerStats(),
                         'healing' => $healing,
                         'health_icon' => $this->getHealthIcon(),
                         'attack_icon' => $this->getAttackIcon()
                     )
                 );
+                $this->gainAttack($playerId, 1);
+                $this->gainHealth($playerId, $healing);
                 break;
             case '+2inf_+1card':
+                self::notifyAllPlayers('log', clienttranslate('${player_name} gains 2 ${influence_icon} and draws a card'),
+                    array('player_name' => self::getActivePlayerName(), 'influence_icon' => $this->getInfluenceIcon())
+                );
                 $playerId = self::getActivePlayerId();
                 $this->gainInfluence($playerId, 2);
-                $newHandCards = self::getDeck($playerId)->pickCards(1, 'deck', $playerId);
-                self::notifyPlayer($playerId, 'newHandCards', '', array('new_hand_cards' => $newHandCards));
-                self::notifyAllPlayers('updatePlayerStats', clienttranslate('${player_name} gains 2 ${influence_icon} and draws a card'),
-                    array (
-                        'player_name' => self::getActivePlayerName(),
-                        'players' => $this->getPlayerStats(),
-                        'influence_icon' => $this->getInfluenceIcon()
-                    )
-                );
+                $this->drawCard(array($playerId), 1);
                 break;
             case '+1att_+1hp_all':
+                self::notifyAllPlayers('log', clienttranslate('${player_name} gains 1 ${attack_icon} and ALL Heroes gain 1 ${health_icon}'),
+                    array('attack_icon' => $this->getAttackIcon(), 'health_icon' => $this->getHealthIcon())
+                );
                 $this->gainAttack(self::getActivePlayerId(), 1);
                 foreach ($this->getAllPlayerHealth() as $playerId => $player) {
                     $healing = min(array(10 - $player['health'], 1));
                     $this->gainHealth($playerId, $healing);
                 }
-                self::notifyAllPlayers('updatePlayerStats', clienttranslate('${player_name} gains 1 ${attack_icon} and ALL Heroes gain 1 ${health_icon}'),
-                    array (
-                        'players' => $this->getPlayerStats(),
-                        'attack_icon' => $this->getAttackIcon(),
-                        'health_icon' => $this->getHealthIcon()
-                    )
-                );
                 break;
             case '+1att_all_+1inf_all_+1hp_all_+1card_all':
-                foreach ($this->getAllPlayerHealth() as $playerId => $player) {
-                    $this->gainAttack($playerId, 1);
-                    $this->gainInfluence($playerId, 1);
-                    $healing = min(array(10 - $player['health'], 1));
-                    $this->gainHealth($playerId, $healing);
-                    $newHandCards = $this->getDeck($playerId)->pickCards(1, 'deck', $playerId);
-                    self::notifyPlayer($playerId, 'newHandCards', '', array('new_hand_cards' => $newHandCards));
-                }
-                self::notifyAllPlayers('updatePlayerStats', clienttranslate('ALL Heroes gain 1 ${attack_icon}, 1 ${influence_icon}, 1 ${health_icon} and draw a card'),
+                self::notifyAllPlayers('log', clienttranslate('ALL Heroes gain 1 ${attack_icon}, 1 ${influence_icon}, 1 ${health_icon} and draw a card'),
                     array (
-                        'players' => $this->getPlayerStats(),
                         'attack_icon' => $this->getAttackIcon(),
                         'influence_icon' => $this->getInfluenceIcon(),
                         'health_icon' => $this->getHealthIcon()
                     )
                 );
+                $playerIds = array();
+                foreach ($this->getAllPlayerHealth() as $playerId => $player) {
+                    $playerIds[] = $playerId;
+                    $this->gainAttack($playerId, 1);
+                    $this->gainInfluence($playerId, 1);
+                    $healing = min(array(10 - $player['health'], 1));
+                    $this->gainHealth($playerId, $healing);
+                }
+                $this->drawCard($playerIds, 1);
+                break;
+            case '-1loc_token':
+                if (!$this->isLocationEmpty()) {
+                    $marker = self::incGameStateValue('location_marker', -1);
+                    self::notifyAllPlayers('locationUpdate', clienttranslate('1 ${location_icon} was removed from the Location'),
+                        array('marker' => $marker, 'location_icon' => $this->getLocationIcon())
+                    );
+                }
                 break;
             case 'c[+2hp_any]':
                 if ($option == 0) {
                     $executionComplete = false;
                 } else {
                     $healing = min(array(10 - $this->getHealthByHeroId($option), 2));
-                    $this->gainHealthByHeroId($option, $healing);
-                    self::notifyAllPlayers('updatePlayerStats', clienttranslate('${player_name} gains ${healing} ${health_icon}'),
+                    self::notifyAllPlayers('log', clienttranslate('${player_name} gains ${healing} ${health_icon}'),
                         array (
                             'player_name' => $this->getPlayerName($option),
                             'healing' => $healing,
-                            'health_icon' => $this->getHealthIcon(),
-                            'players' => $this->getPlayerStats()
+                            'health_icon' => $this->getHealthIcon()
                         )
                     );
+                    $this->gainHealthByHeroId($option, $healing);
                 }
                 break;
             case 'c[+1att|+2hp]':
                 if ($option == 0) {
                     $executionComplete = false;
                 } else if ($option == 1) {
-                    $this->gainAttack(self::getActivePlayerId(), 1);
-                    self::notifyAllPlayers('updatePlayerStats', clienttranslate('${player_name} gains 1 ${attack_icon}'),
-                        array (
-                            'player_name' => self::getActivePlayerName(),
-                            'players' => $this->getPlayerStats(),
-                            'attack_icon' => $this->getAttackIcon()
-                        )
+                    self::notifyAllPlayers('log', clienttranslate('${player_name} gains 1 ${attack_icon}'),
+                        array('player_name' => self::getActivePlayerName(), 'attack_icon' => $this->getAttackIcon())
                     );
+                    $this->gainAttack(self::getActivePlayerId(), 1);
                 } else {
                     $playerId = self::getActivePlayerId();
                     $healing = min(array(10 - $this->getHealth($playerId), 2));
-                    $this->gainHealth($playerId, $healing);
-                    self::notifyAllPlayers('updatePlayerStats', clienttranslate('${player_name} gains ${healing} ${health_icon}'),
+                    self::notifyAllPlayers('log', clienttranslate('${player_name} gains ${healing} ${health_icon}'),
                         array (
                             'player_name' => self::getActivePlayerName(),
-                            'players' => $this->getPlayerStats(),
                             'healing' => $healing,
                             'health_icon' => $this->getHealthIcon()
                         )
                     );
+                    $this->gainHealth($playerId, $healing);
                 }
                 break;
             case 'c[+2inf|+1inf_all]':
                 if ($option == 0) {
                     $executionComplete = false;
                 } else if ($option == 1) {
-                    $this->gainInfluence(self::getActivePlayerId(), 2);
-                    self::notifyAllPlayers('updatePlayerStats', clienttranslate('${player_name} gains 2 ${influence_icon}'),
-                        array (
-                            'player_name' => self::getActivePlayerName(),
-                            'players' => $this->getPlayerStats(),
-                            'influence_icon' => $this->getInfluenceIcon()
-                        )
+                    self::notifyAllPlayers('log', clienttranslate('${player_name} gains 2 ${influence_icon}'),
+                        array('player_name' => self::getActivePlayerName(), 'influence_icon' => $this->getInfluenceIcon())
                     );
+                    $this->gainInfluence(self::getActivePlayerId(), 2);
                 } else {
+                    self::notifyAllPlayers('log', clienttranslate('ALL Heroes gain 1 ${influence_icon}'),
+                        array('influence_icon' => $this->getInfluenceIcon())
+                    );
                     foreach (self::loadPlayersBasicInfos() as $playerId => $player) {
                         $this->gainInfluence($playerId, 1);
                     }
-                    self::notifyAllPlayers('updatePlayerStats', clienttranslate('ALL Heroes gain 1 ${influence_icon}'),
-                        array (
-                            'players' => $this->getPlayerStats(),
-                            'influence_icon' => $this->getInfluenceIcon(),
-                        )
-                    );
                 }
                 break;
             case 'c[+1att|+2hp_any]':
                 if ($option == 0) {
                     $executionComplete = false;
                 } else if ($option == 9) {
-                    $this->gainAttack(self::getActivePlayerId(), 1);
-                    self::notifyAllPlayers('updatePlayerStats', clienttranslate('${player_name} gains 1 ${attack_icon}'),
-                        array (
-                            'player_name' => self::getActivePlayerName(),
-                            'players' => $this->getPlayerStats(),
-                            'attack_icon' => $this->getAttackIcon()
-                        )
+                    self::notifyAllPlayers('log', clienttranslate('${player_name} gains 1 ${attack_icon}'),
+                        array('player_name' => self::getActivePlayerName(), 'attack_icon' => $this->getAttackIcon())
                     );
+                    $this->gainAttack(self::getActivePlayerId(), 1);
                 } else {
                     $healing = min(array(10 - $this->getHealthByHeroId($option), 2));
-                    $this->gainHealthByHeroId($option, $healing);
-                    self::notifyAllPlayers('updatePlayerStats', clienttranslate('${player_name} gains ${healing} ${health_icon}'),
+                    self::notifyAllPlayers('log', clienttranslate('${player_name} gains ${healing} ${health_icon}'),
                         array (
                             'player_name' => $this->getPlayerName($option),
                             'healing' => $healing,
-                            'health_icon' => $this->getHealthIcon(),
-                            'players' => $this->getPlayerStats()
+                            'health_icon' => $this->getHealthIcon()
                         )
                     );
+                    $this->gainHealthByHeroId($option, $healing);
                 }
                 break;
             default:
                 self::notifyAllPlayers('unknown_effect', 'Unknown effect: ' . $action, array ());
                 break;
+        }
+        if ($executionComplete) {
+            self::notifyAllPlayers('updatePlayerStats', '', array('players' => $this->getPlayerStats()));
+            self::notifyAllPlayers('acquirableHogwartsCards', '',
+                array('acquirable_hogwarts_cards' => $this->getAcquirableHogwartsCards(self::getActivePlayerId()))
+            );
         }
         return $executionComplete;
     }
@@ -941,7 +929,6 @@ class HogwartsBattle extends Table
                 'villainDefeated',
                 clienttranslate('${player_name} defeated ${villain_name}'),
                 array (
-                    'players' => $this->getPlayerStats(),
                     'player_name' => self::getActivePlayerName(),
                     'villain_name' => $villainCard->name,
                     'villain_id' => $villainCard->id,
@@ -1080,7 +1067,7 @@ class HogwartsBattle extends Table
                 if ($hogwartsCard->onHand != null) {
                     switch ($hogwartsCard->onHand) {
                         case 'max1dmg':
-                            $this->addEffect('max1dmg', self::$TRIGGER_ON_DMG_DARK_ARTS_OR_VILLAIN, $this->getHeroName($heroId), self::$SOURCE_HOGWARTS_CARD, $cardId, $hogwartsCard->typeId);
+                            $this->addEffect('max1dmg', self::$TRIGGER_ON_DMG_DARK_ARTS_OR_VILLAIN, $this->getHeroName($heroId), self::$SOURCE_HOGWARTS_CARD, $cardId, $hogwartsCard->typeId, $heroId);
                             break;
                     }
                 }
@@ -1200,7 +1187,7 @@ class HogwartsBattle extends Table
         $effectsModified = false;
         if ($hogwartsCard->onHand != null) {
             // remove onHand effects
-            $this->removeEffects(self::$SOURCE_HOGWARTS_CARD, $cardId);
+            $this->removeEffects(self::$SOURCE_HOGWARTS_CARD, $cardId, $this->getHeroId($playerId));
             $effectsModified = true;
         }
 
