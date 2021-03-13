@@ -35,6 +35,9 @@ class HogwartsBattle extends Table
     private static $SOURCE_VILLAIN = 'villain';
     private static $SOURCE_DARK_ARTS_CARD = 'darkArtsCard';
 
+    private static $STATE_DARK_ARTS = 1;
+    private static $STATE_VILLAINS = 2;
+
 	function __construct( )
 	{
         // Your global variables labels:
@@ -55,7 +58,11 @@ class HogwartsBattle extends Table
             'location_number' => 22,
             'location_marker' => 23,
 
-            'dark_arts_cards_revealed' => 27,
+            'dark_arts_cards_revealed' => 25,
+
+            'cards_to_discard' => 26,
+            'discard_source_is_dark' => 27, // villain or dark arts card => 1 else 0
+            'discard_return_state' => 28,
 
             'villains_max' => 30,
             'villain_1_dmg' => 31,
@@ -150,6 +157,9 @@ class HogwartsBattle extends Table
         self::setGameStateInitialValue('location_marker', 0);
 
         self::setGameStateInitialValue('dark_arts_cards_revealed', 0);
+        self::setGameStateInitialValue('cards_to_discard', 0);
+        self::setGameStateInitialValue('discard_source_is_dark', 0);
+        self::setGameStateInitialValue('discard_return_state', 0);
 
         self::setGameStateInitialValue('villains_max', $villains_max);
         self::setGameStateInitialValue('villain_1_dmg', 0);
@@ -321,7 +331,7 @@ class HogwartsBattle extends Table
     }
 
     function getActiveEffects($trigger = null) {
-        $sql = "SELECT effect_id id, effect_key, effect_trigger, effect_name name, effect_source source, effect_source_id source_id, effect_source_card_id source_card_id, effect_hero_id hero_id FROM effect";
+        $sql = "SELECT effect_id id, effect_key, effect_trigger, effect_name name, effect_source source, effect_source_id source_id, effect_source_card_id source_card_id, effect_player_id player_id FROM effect";
         if ($trigger != null) {
             $sql .= " WHERE effect_resolved is false and effect_trigger = '$trigger'";
         }
@@ -329,7 +339,7 @@ class HogwartsBattle extends Table
     }
 
     function getEffectById($effectId) {
-        $sql = "SELECT effect_id id, effect_key, effect_trigger, effect_name name, effect_source source, effect_source_id source_id, effect_source_card_id source_card_id, effect_hero_id hero_id FROM effect WHERE effect_id = $effectId";
+        $sql = "SELECT effect_id id, effect_key, effect_trigger, effect_name name, effect_source source, effect_source_id source_id, effect_source_card_id source_card_id, effect_player_id player_id FROM effect WHERE effect_id = $effectId";
         return self::getCollectionFromDb($sql);
     }
 
@@ -341,20 +351,26 @@ class HogwartsBattle extends Table
         self::DbQuery("UPDATE effect SET effect_resolved = false");
     }
 
-    function addEffect($effect_key, $effect_trigger, $name, $source, $source_id, $source_card_id, $hero_id = null) {
-        $sql = "INSERT INTO effect(effect_key, effect_trigger, effect_name, effect_source, effect_source_id, effect_source_card_id, effect_hero_id) VALUES ".
+    function addEffect($effect_key, $effect_trigger, $name, $source, $source_id, $source_card_id, $player_id = null) {
+        $sql = "INSERT INTO effect(effect_key, effect_trigger, effect_name, effect_source, effect_source_id, effect_source_card_id, effect_player_id) VALUES ".
             "('$effect_key', '$effect_trigger', '$name', '$source', '$source_id', '$source_card_id', ";
-        if ($hero_id == null) {
+        if ($player_id == null) {
             $sql .= "null";
         } else {
-            $sql .= "'$hero_id'";
+            $sql .= "'$player_id'";
         }
         $sql .= ")";
         self::DbQuery($sql);
     }
 
-    function removeEffects($source, $source_id, $heroId) {
-        self::DbQuery("DELETE FROM effect WHERE effect_source = '$source' and effect_source_id = '$source_id' and effect_hero_id = '$heroId'");
+    function removeEffects($source, $source_id, $playerId) {
+        $sql = "DELETE FROM effect WHERE effect_source = '$source' and effect_source_id = '$source_id'";
+        if ($playerId != null) {
+            $sql .= " and effect_player_id = '$playerId'";
+        } else {
+            $sql .= " and effect_player_id is null";
+        }
+        self::DbQuery($sql);
     }
 
     function clearAllEffects() {
@@ -400,7 +416,7 @@ class HogwartsBattle extends Table
     }
 
     function getAllPlayerHealth() {
-        return self::getUniqueValueFromDB("SELECT player_id id, player_health health FROM player");
+        return self::getCollectionFromDb("SELECT player_id id, player_health health FROM player");
     }
 
     function getPlayerInfluence($playerId) {
@@ -473,7 +489,7 @@ class HogwartsBattle extends Table
         foreach ($effects as $effectId => $effect) {
             if ($effect['effect_key'] == 'no_draw_cards') {
                 self::notifyAllPlayers('log', clienttranslate('${effect_name} prevents card drawing'),
-                    array ('i18n' => array('effect_name'))
+                    array ('i18n' => array('effect_name'), 'effect_name' => $effect['name'])
                 );
                 return;
             }
@@ -547,7 +563,7 @@ class HogwartsBattle extends Table
                         $attack ++;
                     }
                 }
-                self::notifyAllPlayers('log', clienttranslate('${player_name} gains 1 {influence_icon} and ${attack} ${attack_icon}'),
+                self::notifyAllPlayers('log', clienttranslate('${player_name} gains 1 ${influence_icon} and ${attack} ${attack_icon}'),
                     array (
                         'player_name' => self::getActivePlayerName(),
                         'attack' => $attack,
@@ -673,7 +689,7 @@ class HogwartsBattle extends Table
                     $healing = min(array(10 - $this->getHealthByHeroId($option), 2));
                     self::notifyAllPlayers('log', clienttranslate('${player_name} gains ${healing} ${health_icon}'),
                         array (
-                            'player_name' => $this->getPlayerName($option),
+                            'player_name' => $this->getHeroName($option),
                             'healing' => $healing,
                             'health_icon' => $this->getHealthIcon()
                         )
@@ -752,26 +768,28 @@ class HogwartsBattle extends Table
         return $executionComplete;
     }
 
-    function executeDarkAction($action, $option = 0) {
+    function executeDarkAction($sourceName, $action, $option = 0) {
         $executionComplete = true;
         switch ($action) {
             case '1dmg':
                 $this->decreaseHealth(self::getActivePlayerId(), 1);
-                self::notifyAllPlayers('villainTurn', clienttranslate('${player_name} loses 1 ${health_icon}'),
+                self::notifyAllPlayers('updatePlayerStats', clienttranslate('${player_name} loses 1 ${health_icon}') . '${source_name}',
                     array (
                         'players' => self::getPlayerStats(),
                         'player_name' => self::getActivePlayerName(),
-                        'health_icon' => $this->getHealthIcon()
+                        'health_icon' => $this->getHealthIcon(),
+                        'source_name' => $sourceName != null ? " ($sourceName)" : ''
                     )
                 );
                 break;
             case '2dmg':
                 $this->decreaseHealth(self::getActivePlayerId(), 2);
-                self::notifyAllPlayers('villainTurn', clienttranslate('${player_name} loses 2 ${health_icon}'),
+                self::notifyAllPlayers('updatePlayerStats', clienttranslate('${player_name} loses 2 ${health_icon}') . '${source_name}',
                     array (
                         'players' => self::getPlayerStats(),
                         'player_name' => self::getActivePlayerName(),
-                        'health_icon' => $this->getHealthIcon()
+                        'health_icon' => $this->getHealthIcon(),
+                        'source_name' => $sourceName != null ? " ($sourceName)" : ''
                     )
                 );
                 break;
@@ -779,10 +797,11 @@ class HogwartsBattle extends Table
                 foreach (self::loadPlayersBasicInfos() as $playerId => $player) {
                     $this->decreaseHealth($playerId, 1);
                 }
-                self::notifyAllPlayers('villainTurn', clienttranslate('ALL Heroes lose 1 ${health_icon}'),
+                self::notifyAllPlayers('updatePlayerStats', clienttranslate('ALL Heroes lose 1 ${health_icon}') . '${source_name}',
                     array (
                         'players' => self::getPlayerStats(),
-                        'health_icon' => $this->getHealthIcon()
+                        'health_icon' => $this->getHealthIcon(),
+                        'source_name' => $sourceName != null ? " ($sourceName)" : ''
                     )
                 );
                 break;
@@ -791,20 +810,30 @@ class HogwartsBattle extends Table
                     self::notifyAllPlayers('locationFull', clienttranslate('Villains already controlling the Location'), array ());
                 } else {
                     $marker = self::incGameStateValue('location_marker', 1);
-                    self::notifyAllPlayers('locationUpdate', clienttranslate('1 ${location_icon} was added to the Location'),
+                    self::notifyAllPlayers('locationUpdate', clienttranslate('1 ${location_icon} was added to the Location') . '${source_name}',
                         array (
                             'marker' => $marker,
-                            'location_icon' => $this->getLocationIcon()
+                            'location_icon' => $this->getLocationIcon(),
+                            'source_name' => $sourceName != null ? " ($sourceName)" : ''
                         )
                     );
                     $effects = $this->getActiveEffects(self::$TRIGGER_ON_LOCATION_TOKEN);
                     foreach ($effects as $effectId => $effect) {
-                        $this->executeDarkAction($effect['effect_key']);
+                        $this->executeDarkAction($effect['name'], $effect['effect_key']);
                     }
                 }
                 break;
             case '1dmg_1discard':
-                // TODO send player to choose a card to discard if he holds cards in his hand
+                $this->decreaseHealth(self::getActivePlayerId(), 1);
+                self::incGameStateValue('cards_to_discard', 1);
+                self::notifyAllPlayers('updatePlayerStats', clienttranslate('${player_name} loses 1 ${health_icon} and has to discard 1 card') . '${source_name}',
+                    array (
+                        'players' => self::getPlayerStats(),
+                        'player_name' => self::getActivePlayerName(),
+                        'health_icon' => $this->getHealthIcon(),
+                        'source_name' => $sourceName != null ? " ($sourceName)" : ''
+                    )
+                );
                 break;
             default:
                 self::notifyAllPlayers('unknown_dark_action', 'Unknown dark action: ' . $action, array ());
@@ -848,11 +877,10 @@ class HogwartsBattle extends Table
                 self::notifyAllPlayers('effects', '', array('effects' => $this->getActiveEffects()));
             }
             if ($darkArtsCard->onPlay != null) {
-                $this->executeDarkAction($darkArtsCard->onPlay);
-
-                // TODO check if a hero is stunned
+                $this->executeDarkAction(null, $darkArtsCard->onPlay);
             }
 
+            self::incGameStateValue('dark_arts_cards_revealed', 1);
             $this->gamestate->nextState('revealed');
         } else {
             $this->darkArtsCards->moveAllCardsInLocation('hand', 'discard');
@@ -921,7 +949,7 @@ class HogwartsBattle extends Table
             $this->gamestate->nextState('villainAttacked');
         } else {
 
-            $this->removeEffects(self::$SOURCE_VILLAIN, $villainCard->id);
+            $this->removeEffects(self::$SOURCE_VILLAIN, $villainCard->id, null);
 
             self::setGameStateValue("villain_${slot}_dmg", 0);
             $this->villainCards->moveCard($card['id'], 'discard');
@@ -943,6 +971,45 @@ class HogwartsBattle extends Table
             } else {
                 // TODO state to decide on rewards (not relevant for game1)
             }
+        }
+    }
+
+    function discardCard($cardId) {
+        $playerId = self::getActivePlayerId();
+        $deck = self::getDeck($playerId);
+        $card = $deck->getCard($cardId);
+        $hogwartsCard = $this->hogwartsCardsLibrary->getCard($card['type'], $card['type_arg']);
+        if (is_null($card) || $card['location'] != 'hand') {
+            throw new feException( "Selected card is not in your hand" );
+        }
+        $deck->moveCard($cardId, 'discard');
+
+        self::notifyAllPlayers('cardDiscarded', clienttranslate('${player_name} discards ${card_name}'),
+            array(
+                'player_name' => self::getActivePlayerName(),
+                'player_id' => $playerId,
+                'card_name' => $hogwartsCard->name,
+                'card_id' => $cardId,
+                'card_played' => $card,
+                'players' => $this->getPlayerStats()
+            )
+        );
+
+        $effects = $this->getActiveEffects(self::$TRIGGER_ON_DISCARD);
+        foreach ($effects as $effectId => $effect) {
+            $this->executeDarkAction($effect['name'], $effect['effect_key']);
+        }
+
+        if ($hogwartsCard->onDiscard != null) {
+            $this->executeAction($hogwartsCard->onDiscard);
+            self::notifyAllPlayers('updatePlayerStats', '', array('players' => $this->getPlayerStats()));
+        }
+
+        $returnState = self::getGameStateValue('discard_return_state');
+        if ($returnState == self::$STATE_DARK_ARTS) {
+            $this->gamestate->nextState('darkArts');
+        } else if ($returnState == self::$STATE_VILLAINS) {
+            // TODO forward to villain state
         }
     }
 
@@ -1067,7 +1134,7 @@ class HogwartsBattle extends Table
                 if ($hogwartsCard->onHand != null) {
                     switch ($hogwartsCard->onHand) {
                         case 'max1dmg':
-                            $this->addEffect('max1dmg', self::$TRIGGER_ON_DMG_DARK_ARTS_OR_VILLAIN, $this->getHeroName($heroId), self::$SOURCE_HOGWARTS_CARD, $cardId, $hogwartsCard->typeId, $heroId);
+                            $this->addEffect('max1dmg', self::$TRIGGER_ON_DMG_DARK_ARTS_OR_VILLAIN, $this->getHeroName($heroId), self::$SOURCE_HOGWARTS_CARD, $cardId, $hogwartsCard->typeId, $player_id);
                             break;
                     }
                 }
@@ -1097,26 +1164,38 @@ class HogwartsBattle extends Table
     }
 
     function stInitTurnEffects() {
-        // nothing to do here. Meaning of this step is to get the args method called to have the current effects visible in the ui
+        self::setGameStateValue('discard_source_is_dark', 1);
+        self::setGameStateValue('discard_return_state', self::$STATE_DARK_ARTS);
         $this->gamestate->nextState();
     }
 
     function stDarkArtsCardRevealed() {
-        self::incGameStateValue('dark_arts_cards_revealed', 1);
+        if (self::getGameStateValue('cards_to_discard') > 0) {
+            self::setGameStateValue('cards_to_discard', 0);
+            if ($this->getDeck(self::getActivePlayerId())->countCardInLocation('hand') == 0) {
+                self::notifyAllPlayers('logs', clienttranslate('${player_name} has no hand cards to discard'),
+                    array('player_name' => self::getActivePlayerName())
+                );
+            } else {
+                $this->gamestate->nextState('discard');
+                return;
+            }
+        }
+        self::setGameStateValue('discard_source_is_dark', 0);
 
-        $this->gamestate->nextState();
+        // TODO check if a player is stunned
+
+        $this->gamestate->nextState('checksDone');
     }
 
     function stVillainAbilities() {
-        $activeVillainSlot = self::getGameStateValue('villain_turn_slot');
-        $activeVillainSlot ++;
+        $activeVillainSlot = self::incGameStateValue('villain_turn_slot', 1);
         $villainsMax = self::getGameStateValue('villains_max');
         for($slot = $activeVillainSlot; $slot <= $villainsMax; $slot ++) {
             $cards = $this->villainCards->getPlayerHand($slot);
             $card = reset($cards);
             $villainCard = $this->villainCardsLibrary->getVillainCard($card['type'], $card['type_arg']);
             if ($villainCard->ability != null) {
-                self::setGameStateValue('villain_turn_slot', $activeVillainSlot);
                 self::setGameStateValue('villain_turn_id', $villainCard->id);
                 $this->gamestate->nextState('villainTurn');
                 return;
@@ -1134,7 +1213,7 @@ class HogwartsBattle extends Table
                     'villain_name' => $villainCard->name
                 )
             );
-            $this->executeDarkAction($villainCard->ability);
+            $this->executeDarkAction(null, $villainCard->ability);
         }
 
         // TODO check if a player is stunned
@@ -1187,26 +1266,26 @@ class HogwartsBattle extends Table
         $effectsModified = false;
         if ($hogwartsCard->onHand != null) {
             // remove onHand effects
-            $this->removeEffects(self::$SOURCE_HOGWARTS_CARD, $cardId, $this->getHeroId($playerId));
+            $this->removeEffects(self::$SOURCE_HOGWARTS_CARD, $cardId, $playerId);
             $effectsModified = true;
         }
 
         if ($hogwartsCard->onPlayEffect != null) {
             switch ($hogwartsCard->onPlayEffect) {
                 case 'c[+2hp_any_onDefVil]':
-                    $this->addEffect('c[+2hp_any]', self::$TRIGGER_ON_DEFEAT_VILLAIN, $hogwartsCard->name, self::$SOURCE_HOGWARTS_CARD, $cardId, $hogwartsCard->typeId);
+                    $this->addEffect('c[+2hp_any]', self::$TRIGGER_ON_DEFEAT_VILLAIN, $hogwartsCard->name, self::$SOURCE_HOGWARTS_CARD, $cardId, $hogwartsCard->typeId, $playerId);
                     break;
                 case '+1inf_onDefVil':
-                    $this->addEffect('+1inf', self::$TRIGGER_ON_DEFEAT_VILLAIN, $hogwartsCard->name, self::$SOURCE_HOGWARTS_CARD, $cardId, $hogwartsCard->typeId);
+                    $this->addEffect('+1inf', self::$TRIGGER_ON_DEFEAT_VILLAIN, $hogwartsCard->name, self::$SOURCE_HOGWARTS_CARD, $cardId, $hogwartsCard->typeId, $playerId);
                     break;
                 case 'spells_top_deck':
-                    $this->addEffect('spells_top_deck', self::$TRIGGER_ON_ACQUIRE, $hogwartsCard->name, self::$SOURCE_HOGWARTS_CARD, $cardId, $hogwartsCard->typeId);
+                    $this->addEffect('spells_top_deck', self::$TRIGGER_ON_ACQUIRE, $hogwartsCard->name, self::$SOURCE_HOGWARTS_CARD, $cardId, $hogwartsCard->typeId, $playerId);
                     break;
                 case 'items_top_deck':
-                    $this->addEffect('items_top_deck', self::$TRIGGER_ON_ACQUIRE, $hogwartsCard->name, self::$SOURCE_HOGWARTS_CARD, $cardId, $hogwartsCard->typeId);
+                    $this->addEffect('items_top_deck', self::$TRIGGER_ON_ACQUIRE, $hogwartsCard->name, self::$SOURCE_HOGWARTS_CARD, $cardId, $hogwartsCard->typeId, $playerId);
                     break;
                 case 'allies_on_top':
-                    $this->addEffect('allies_on_top', self::$TRIGGER_ON_ACQUIRE, $hogwartsCard->name, self::$SOURCE_HOGWARTS_CARD, $cardId, $hogwartsCard->typeId);
+                    $this->addEffect('allies_on_top', self::$TRIGGER_ON_ACQUIRE, $hogwartsCard->name, self::$SOURCE_HOGWARTS_CARD, $cardId, $hogwartsCard->typeId, $playerId);
                     break;
             }
             $effectsModified = true;
@@ -1302,7 +1381,7 @@ class HogwartsBattle extends Table
             self::setGameStateValue('location_number', $locationNumber);
             self::setGameStateValue('location_marker', 0); // TODO game option to have new location start with 1 or 2 tokens
 
-            self::notifyAllPlayers('locationRevealed', clienttranslate('New Location revealed'),
+            self::notifyAllPlayers('locationRevealed', '<b>' . clienttranslate('New Location revealed') . '</b>',
                 array (
                     'location_number' => $locationNumber,
                     'location_marker_total' => $this->locations[self::getGameStateValue('game_number')][$locationNumber]['max_tokens'],

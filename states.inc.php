@@ -90,7 +90,15 @@ $machinestates = array(
         "description" => "",
         "type" => "game",
         "action" => "stDarkArtsCardRevealed",
-        "transitions" => array("" => 20)
+        "transitions" => array("checksDone" => 20, "discard" => 24)
+    ),
+    24 => array(
+        "name" => "discardCard",
+        "description" => clienttranslate('${actplayer} must chose a card to discard'),
+        "descriptionmyturn" => clienttranslate('${you} must chose a card to discard'),
+        "type" => "activeplayer",
+        "possibleactions" => array("discard"),
+        "transitions" => array("darkArts" => 21)
     ),
     30 => array(
         "name" => "villainAbilities",

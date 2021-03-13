@@ -35,7 +35,7 @@ class DarkArtsCards {
             2 => new DarkArtsCard(0, 2, clienttranslate('He Who Must Not Be Named'), '+1loc_token', null,
                 clienttranslate('Add 1 ${location_token} to the Location')),
 
-            3 => new DarkArtsCard(0, 2, clienttranslate('Flipendo'), '1dmg_1discard', null,
+            3 => new DarkArtsCard(0, 3, clienttranslate('Flipendo'), '1dmg_1discard', null,
                 clienttranslate('Active Hero loses 1 ${health_icon} and discards a card')),
         );
     }

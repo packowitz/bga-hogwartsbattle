@@ -87,7 +87,7 @@ function (dojo, declare) {
             this.locationTotal = gamedatas.location_total;
             $('location_total').innerHTML = this.locationTotal;
 
-            this.locationNr = gamedatas.location_number;
+            this.placeLocationCard(gamedatas.location_number);
             this.location_counter = new ebg.counter();
             this.location_counter.create('location_number');
             this.location_counter.setValue(this.locationNr);
@@ -99,13 +99,6 @@ function (dojo, declare) {
             this.location_marker_counter = new ebg.counter();
             this.location_marker_counter.create('location_marker');
             this.location_marker_counter.setValue(this.locationMarker);
-
-            dojo.place(
-              this.format_block( 'jstpl_location', {
-                  elementId: 'location_image_' + this.locationNr,
-                  posX: (this.locationNr - 1) * 200,
-                  posY: (this.gameNr - 1) * 150,
-              }), 'location_image');
 
             for (let i = 1; i <= this.locationMarker; i++) {
                 this.placeMarkerToLocation(i);
@@ -269,6 +262,18 @@ function (dojo, declare) {
                     }
                     break;
                 }
+                case 'discardCard': {
+                    if (this.isCurrentPlayerActive()) {
+                        this.extractCards(this.playerHand).forEach(card => {
+                            let cardNode = dojo.byId(card.id);
+                            if (!dojo.hasClass(cardNode, 'can_discard')) {
+                                dojo.addClass(cardNode, 'can_discard');
+                                this.connect($(card.id), 'onclick', 'onDiscardHandCard');
+                            }
+                        });
+                    }
+                    break;
+                }
                 case 'playerTurn': {
                     if (this.isCurrentPlayerActive()) {
                         this.extractCards(this.playerHand).forEach(card => {
@@ -327,6 +332,15 @@ function (dojo, declare) {
             console.log('Leaving state: ' + stateName);
             
             switch(stateName) {
+                case 'discardCard': {
+                    if (this.isCurrentPlayerActive()) {
+                        this.extractCards(this.playerHand).forEach(card => {
+                            dojo.removeClass(dojo.byId(card.id), 'can_discard');
+                            this.disconnect($(card.id), 'onclick');
+                        });
+                    }
+                    break;
+                }
                 case 'playerTurn': {
                     this.clearAcquirableHogwartsCards();
                     if (this.isCurrentPlayerActive()) {
@@ -452,6 +466,20 @@ function (dojo, declare) {
                     this.placeHogwartsCard(card, this.hogwartsCards, 'hogwarts_cards');
                 }
             }
+        },
+
+        placeLocationCard: function(locationNr) {
+            this.locationNr = locationNr;
+            let elementId = 'location_image_' + locationNr;
+            dojo.place(
+              this.format_block('jstpl_location', {
+                  elementId: elementId,
+                  posX: (locationNr - 1) * 200,
+                  posY: (this.gameNr - 1) * 150,
+              }), 'overall_player_board_' + this.currentPlayerId);
+
+            this.attachToNewParent(elementId, 'location_image');
+            this.slideToObjectPos(elementId, 'location_image', 0, 0 ).play();
         },
 
         placeHogwartsCard: function(card, zone, zoneElemId, playerId) {
@@ -672,9 +700,9 @@ function (dojo, declare) {
             if (effect.source == 'hogwartsCard') {
                 this.addHogwartsCardTooltip('active_effect_' + effect.id, effect.source_card_id);
             } else if (effect.source == 'villain') {
-                this.addVillainCardTooltip('active_effect_' + effect.id, effect.source_id)
+                this.addVillainCardTooltip('active_effect_' + effect.id, effect.source_id);
             } else if (effect.source == 'darkArtsCard') {
-
+                this.addDarkArtsCardTooltip('active_effect_' + effect.id, effect.source_card_id);
             }
 
         },
@@ -697,7 +725,9 @@ function (dojo, declare) {
                 }
             }
             if (diff < 0) {
-                //TODO slide location marker away
+                for (let i = markerBefore; i > marker; i--) {
+                    this.removeMarkerFromLocation(i);
+                }
             }
         },
 
@@ -709,6 +739,11 @@ function (dojo, declare) {
             let locationPosId = 'location_pos_' + this.locationMarkerTotal + '_' + nr;
             this.attachToNewParent(elementId, locationPosId);
             this.slideToObject(elementId, locationPosId, 1000).play();
+        },
+
+        removeMarkerFromLocation: function(nr) {
+            let elementId = 'location_' + this.locationMarkerTotal + '_' + nr;
+            this.slideToObjectAndDestroy(elementId, "player_boards", 1000, 0 );
         },
 
 
@@ -764,6 +799,19 @@ function (dojo, declare) {
             let cardId = parseInt(e.target.dataset.cardId);
             console.log('play hand card ' + cardId);
             let action = 'playCard';
+            if (this.checkAction(action, true)) {
+                this.ajaxcall(`/${this.game_name}/${this.game_name}/${action}.html`, {
+                    id : cardId,
+                    lock : true
+                }, this, function(result) {}, function(is_error) {});
+            }
+        },
+
+        onDiscardHandCard: function(e) {
+            dojo.stopEvent(e);
+            let cardId = parseInt(e.target.dataset.cardId);
+            console.log('discard hand card ' + cardId);
+            let action = 'discard';
             if (this.checkAction(action, true)) {
                 this.ajaxcall(`/${this.game_name}/${this.game_name}/${action}.html`, {
                     id : cardId,
@@ -862,11 +910,11 @@ function (dojo, declare) {
             dojo.subscribe('newHandCards', this, "notif_newHandCards");
             dojo.subscribe('refillHandCardsLog', this, "notif_refillHandCardsLog");
             dojo.subscribe('cardPlayed', this, "notif_cardPlayed");
+            dojo.subscribe('cardDiscarded', this, "notif_cardDiscarded");
             dojo.subscribe('acquireHogwartsCard', this, "notif_acquireHogwartsCard");
             dojo.subscribe('villainAttacked', this, "notif_updatePlayerStats");
             dojo.subscribe('villainDefeated', this, "notif_villainDefeated");
             dojo.subscribe('villainRevealed', this, "notif_villainRevealed");
-            dojo.subscribe('villainTurn', this, "notif_updatePlayerStats");
             dojo.subscribe('updatePlayerStats', this, "notif_updatePlayerStats");
             dojo.subscribe('effects', this, "notif_updateEffects");
             dojo.subscribe('darkArtsCardRevealed', this, "notif_darkArtsCardRevealed");
@@ -912,6 +960,20 @@ function (dojo, declare) {
                 this.addHogwartsCardTooltip(cardElemId, parseInt(cardNode.dataset.cardTypeId));
             } else {
                 this.placeHogwartsCard(notif.args.card_played, this.playedCards, 'overall_player_board_' + notif.args.player_id, notif.args.player_id);
+            }
+        },
+
+        notif_cardDiscarded: function(notif) {
+            if (this.player_id == notif.args.player_id) {
+                let cardElemId = 'hogwarts_card_' + notif.args.card_id + '_p' + notif.args.player_id;
+                this.playerHand.removeFromZone(cardElemId);
+                let cardNode = dojo.byId(cardElemId);
+                dojo.removeClass(cardNode, 'can_discard');
+                this.disconnect( $(cardElemId), 'onclick');
+                this.discard_piles[notif.args.player_id].placeInZone(cardElemId);
+                this.addHogwartsCardTooltip(cardElemId, parseInt(cardNode.dataset.cardTypeId));
+            } else {
+                this.placeHogwartsCard(notif.args.card_played, this.discard_piles[notif.args.player_id], 'overall_player_board_' + notif.args.player_id, notif.args.player_id);
             }
             this.updatePlayerStats(notif.args.players);
         },
@@ -994,21 +1056,13 @@ function (dojo, declare) {
 
         notif_locationRevealed: function(notif) {
             this.fadeOutAndDestroy('location_image_' + this.locationNr);
+            this.updateLocationMarker(0);
 
-            this.locationNr = notif.args.location_number;
             this.locationMarkerTotal = notif.args.location_marker_total;
             $('location_marker_total').innerHTML = this.locationMarkerTotal;
             this.location_counter.setValue(notif.args.location_marker);
 
-            dojo.place(
-              this.format_block( 'jstpl_location', {
-                  elementId: 'location_image_' + this.locationNr,
-                  posX: (this.locationNr - 1) * 200,
-                  posY: (this.gameNr - 1) * 150,
-              }), 'overall_player_board_' + this.currentPlayerId);
-
-            this.attachToNewParent('location_image_' + this.locationNr, 'location_image');
-            this.slideToObject('location_image_' + this.locationNr, 'location_image', 1000).play();
+            this.placeLocationCard(notif.args.location_number);
         },
    });
 });

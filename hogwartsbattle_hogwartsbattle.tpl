@@ -63,7 +63,7 @@
                     <div>{LOCATION} <span id="location_number"></span>/<span id="location_total"></span></div>
                     <div><div class="icon location_icon"></div><span id="location_marker"></span>/<span id="location_marker_total"></span></div>
                 </h3>
-                <div id="location_image">
+                <div id="location_image" style="position: relative">
                     <div class="location_tokens">
                         <div id="location_pos_4_1" class="location_4_1"></div>
                         <div id="location_pos_4_2" class="location_4_2"></div>

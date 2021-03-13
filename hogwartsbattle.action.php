@@ -76,6 +76,13 @@ class action_hogwartsbattle extends APP_GameAction {
         self::ajaxResponse();
     }
 
+    public function discard() {
+        self::setAjaxMode();
+        $cardId = self::getArg("id", AT_posint, true);
+        $this->game->discardCard($cardId);
+        self::ajaxResponse();
+    }
+
     public function endTurn() {
         self::setAjaxMode();
         $this->game->endTurn();

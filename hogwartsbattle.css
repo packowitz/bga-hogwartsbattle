@@ -254,6 +254,9 @@
 }
 
 .location_card {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 200px;
     height: 150px;
     background-image: url(img/locations.png);
@@ -395,6 +398,12 @@
     cursor: pointer;
 }
 
+.can_discard {
+    border-radius: 5px;
+    animation: pulse-danger 1s infinite alternate;
+    cursor: pointer;
+}
+
 .can_acquire {
     border-radius: 5px;
     animation: pulse 1s infinite alternate;
@@ -414,6 +423,16 @@
 
     100% {
         box-shadow: 0 0 2px 2px #2ebf5b;
+    }
+}
+
+@keyframes pulse-danger {
+    0% {
+        box-shadow: 0 0 2px #e07367;
+    }
+
+    100% {
+        box-shadow: 0 0 2px 2px #f24039;
     }
 }
 

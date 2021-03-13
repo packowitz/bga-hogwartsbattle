@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS `effect` (
   `effect_source_id` int(11) NOT NULL,
   `effect_source_card_id` int(11) NOT NULL,
   `effect_resolved` BOOLEAN NOT NULL DEFAULT false,
-  `effect_hero_id` int unsigned,
+  `effect_player_id` int(10) unsigned,
   PRIMARY KEY (`effect_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
