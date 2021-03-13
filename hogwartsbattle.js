@@ -400,6 +400,13 @@ function (dojo, declare) {
                         }
                         break;
                     }
+                    case 'chooseEffectOption': {
+                        for (let option in args) {
+                            let optId = option.substr('option_'.length);
+                            this.addActionButton(option, args[option], (evt) => { this.onDecideOnEffectOption(evt, optId); });
+                        }
+                        break;
+                    }
                 }
             }
         },        
@@ -589,6 +596,8 @@ function (dojo, declare) {
                         let elementId = 'hogwarts_card_' + card.id + '_p' + this.player_id;
                         dojo.addClass(dojo.byId(elementId), 'can_play');
                         this.connect( $(elementId), 'onclick', 'onPlayHandCard');
+                    } else {
+                        console.log('drawn card not marked as can_play because of: isCurrentPlayer: ' + this.isCurrentPlayerActive() + ' currentState: ' + this.currentState);
                     }
                 }
             }
@@ -822,6 +831,16 @@ function (dojo, declare) {
 
         onDecideOnPlayHandCard: function(evt, cardOption) {
             let action = 'decidePlayCardOption';
+            if (this.checkAction(action, true)) {
+                this.ajaxcall(`/${this.game_name}/${this.game_name}/${action}.html`, {
+                    option : cardOption,
+                    lock : true
+                }, this, function(result) {}, function(is_error) {});
+            }
+        },
+
+        onDecideOnEffectOption: function(evt, cardOption) {
+            let action = 'decideEffectOption';
             if (this.checkAction(action, true)) {
                 this.ajaxcall(`/${this.game_name}/${this.game_name}/${action}.html`, {
                     option : cardOption,

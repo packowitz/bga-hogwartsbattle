@@ -308,6 +308,10 @@ class HogwartsBattle extends Table
         self::loadPlayersBasicInfos()[$playerId]['player_name'];
     }
 
+    function getPlayerIdByHeroId($heroId) {
+        return self::getUniqueValueFromDB("SELECT player_id FROM player where player_hero = ${heroId}");
+    }
+
     function getPlayerStats() {
         $sql = "SELECT player_id id, player_hero hero_id, player_health health, player_influence influence, player_attack attack, player_score score FROM player ";
         $players = self::getCollectionFromDb($sql);
@@ -708,7 +712,7 @@ class HogwartsBattle extends Table
                     $healing = min(array(10 - $this->getHealthByHeroId($option), 2));
                     self::notifyAllPlayers('log', clienttranslate('${hero_name} gains ${healing} ${health_icon}'),
                         array (
-                            'hero_name' => $this->getHeroName($option),
+                            'hero_name' => $this->getActiveHeroName($this->getPlayerIdByHeroId($option)),
                             'healing' => $healing,
                             'health_icon' => $this->getHealthIcon()
                         )
@@ -765,7 +769,7 @@ class HogwartsBattle extends Table
                     $healing = min(array(10 - $this->getHealthByHeroId($option), 2));
                     self::notifyAllPlayers('log', clienttranslate('${hero_name} gains ${healing} ${health_icon}'),
                         array (
-                            'hero_name' => $this->getHeroName($option),
+                            'hero_name' => $this->getActiveHeroName($this->getPlayerIdByHeroId($option)),
                             'healing' => $healing,
                             'health_icon' => $this->getHealthIcon()
                         )
@@ -933,6 +937,7 @@ class HogwartsBattle extends Table
         $effect = reset($effects);
 
         $this->executeAction($effect['effect_key'], $option);
+        $this->markEffectAsResolved($effect['id']);
 
         $this->gamestate->nextState();
     }
