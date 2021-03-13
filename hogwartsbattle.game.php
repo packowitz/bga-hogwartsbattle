@@ -390,6 +390,23 @@ class HogwartsBattle extends Table
         return $cardIds;
     }
 
+    function getActivePlayerColor($playerId) {
+        foreach (self::loadPlayersBasicInfos() as $id => $info) {
+            if ($playerId == $id) {
+                return $info['player_color'];
+            }
+        }
+    }
+
+    function getActiveHeroName($playerId = null) {
+        if ($playerId == null) {
+            $playerId = self::getActivePlayerId();
+        }
+        return '<span class="playername" style="color: #' . $this->getActivePlayerColor($playerId) . ';">' .
+            $this->getHeroName($this->getHeroId($playerId)) . '</span>';
+
+    }
+
     function getHeroName($heroId) {
         switch ($heroId) {
             case HogwartsCards::$harryId:
@@ -528,30 +545,31 @@ class HogwartsBattle extends Table
 
     function executeAction($action, $option = 0) {
         $executionComplete = true;
+        $activePlayerId = self::getActivePlayerId();
         switch ($action) {
             case '+1inf':
-                self::notifyAllPlayers('log', clienttranslate('${player_name} gains 1 ${influence_icon}'),
-                    array ('player_name' => self::getActivePlayerName(), 'influence_icon' => $this->getInfluenceIcon())
+                self::notifyAllPlayers('log', clienttranslate('${hero_name} gains 1 ${influence_icon}'),
+                    array ('hero_name' => self::getActiveHeroName($activePlayerId), 'influence_icon' => $this->getInfluenceIcon())
                 );
-                $this->gainInfluence(self::getActivePlayerId(), 1);
+                $this->gainInfluence($activePlayerId, 1);
                 break;
             case '+2inf':
-                self::notifyAllPlayers('log', clienttranslate('${player_name} gains 2 ${influence_icon}'),
-                    array ('player_name' => self::getActivePlayerName(), 'influence_icon' => $this->getInfluenceIcon())
+                self::notifyAllPlayers('log', clienttranslate('${hero_name} gains 2 ${influence_icon}'),
+                    array ('hero_name' => self::getActiveHeroName($activePlayerId), 'influence_icon' => $this->getInfluenceIcon())
                 );
-                $this->gainInfluence(self::getActivePlayerId(), 2);
+                $this->gainInfluence($activePlayerId, 2);
                 break;
             case '+1att':
-                self::notifyAllPlayers('log', clienttranslate('${player_name} gains 1 ${attack_icon}'),
-                    array ('player_name' => self::getActivePlayerName(), 'attack_icon' => $this->getAttackIcon())
+                self::notifyAllPlayers('log', clienttranslate('${hero_name} gains 1 ${attack_icon}'),
+                    array ('hero_name' => self::getActiveHeroName($activePlayerId), 'attack_icon' => $this->getAttackIcon())
                 );
-                $this->gainAttack(self::getActivePlayerId(), 1);
+                $this->gainAttack($activePlayerId, 1);
                 break;
             case '+2att':
-                self::notifyAllPlayers('log', clienttranslate('${player_name} gains 2 ${attack_icon}'),
-                    array ('player_name' => self::getActivePlayerName(), 'attack_icon' => $this->getAttackIcon())
+                self::notifyAllPlayers('log', clienttranslate('${hero_name} gains 2 ${attack_icon}'),
+                    array ('hero_name' => self::getActiveHeroName($activePlayerId), 'attack_icon' => $this->getAttackIcon())
                 );
-                $this->gainAttack(self::getActivePlayerId(), 2);
+                $this->gainAttack($activePlayerId, 2);
                 break;
             case '+1inf_+1att_xAllyPlayed':
                 $playerId = self::getActivePlayerId();
@@ -563,9 +581,9 @@ class HogwartsBattle extends Table
                         $attack ++;
                     }
                 }
-                self::notifyAllPlayers('log', clienttranslate('${player_name} gains 1 ${influence_icon} and ${attack} ${attack_icon}'),
+                self::notifyAllPlayers('log', clienttranslate('${hero_name} gains 1 ${influence_icon} and ${attack} ${attack_icon}'),
                     array (
-                        'player_name' => self::getActivePlayerName(),
+                        'hero_name' => self::getActiveHeroName($activePlayerId),
                         'attack' => $attack,
                         'attack_icon' => $this->getAttackIcon(),
                         'influence_icon' => $this->getInfluenceIcon()
@@ -584,16 +602,15 @@ class HogwartsBattle extends Table
                 }
                 break;
             case '+1hp':
-                $playerId = self::getActivePlayerId();
-                $healing = min(array(10 - $this->getHealth($playerId), 1));
-                self::notifyAllPlayers('log', clienttranslate('${player_name} gains ${healing} ${health_icon}'),
+                $healing = min(array(10 - $this->getHealth($activePlayerId), 1));
+                self::notifyAllPlayers('log', clienttranslate('${hero_name} gains ${healing} ${health_icon}'),
                     array (
-                        'player_name' => self::getActivePlayerName(),
+                        'hero_name' => self::getActiveHeroName(),
                         'healing' => $healing,
                         'health_icon' => $this->getHealthIcon()
                     )
                 );
-                $this->gainHealth($playerId, $healing);
+                $this->gainHealth($activePlayerId, $healing);
                 break;
             case '+1hp_all':
                 self::notifyAllPlayers('log', clienttranslate('ALL Heroes gain 1 ${health_icon}'),
@@ -605,8 +622,10 @@ class HogwartsBattle extends Table
                 }
                 break;
             case '+1card':
-                self::notifyAllPlayers('log', clienttranslate('${player_name} draws a card'), array('player_name' => self::getActivePlayerName()));
-                $this->drawCard(array(self::getActivePlayerId()), 1);
+                self::notifyAllPlayers('log', clienttranslate('${hero_name} draws a card'),
+                    array('hero_name' => self::getActiveHeroName($activePlayerId))
+                );
+                $this->drawCard(array($activePlayerId), 1);
                 break;
             case '+1card_all':
                 self::notifyAllPlayers('log', clienttranslate('ALL Heroes draw a card'), array());
@@ -617,40 +636,40 @@ class HogwartsBattle extends Table
                 $this->drawCard($playerIds, 1);
                 break;
             case '+1att_+1card':
-                self::notifyAllPlayers('log', clienttranslate('${player_name} gains 1 ${attack_icon} and draws a card'),
-                    array('player_name' => self::getActivePlayerName(), 'attack_icon' => $this->getAttackIcon())
+                self::notifyAllPlayers('log', clienttranslate('${hero_name} gains 1 ${attack_icon} and draws a card'),
+                    array('hero_name' => self::getActiveHeroName($activePlayerId), 'attack_icon' => $this->getAttackIcon())
                 );
-                $playerId = self::getActivePlayerId();
-                $this->gainAttack($playerId, 1);
-                $this->drawCard(array($playerId), 1);
+                $this->gainAttack($activePlayerId, 1);
+                $this->drawCard(array($activePlayerId), 1);
                 break;
             case '+1att_+1hp':
-                $playerId = self::getActivePlayerId();
-                $healing = min(array(10 - $this->getHealth($playerId), 1));
-                self::notifyAllPlayers('log', clienttranslate('${player_name} gains 1 {attack_icon} and ${healing} ${health_icon}'),
+                $healing = min(array(10 - $this->getHealth($activePlayerId), 1));
+                self::notifyAllPlayers('log', clienttranslate('${hero_name} gains 1 {attack_icon} and ${healing} ${health_icon}'),
                     array (
-                        'player_name' => self::getActivePlayerName(),
+                        'hero_name' => self::getActiveHeroName($activePlayerId),
                         'healing' => $healing,
                         'health_icon' => $this->getHealthIcon(),
                         'attack_icon' => $this->getAttackIcon()
                     )
                 );
-                $this->gainAttack($playerId, 1);
-                $this->gainHealth($playerId, $healing);
+                $this->gainAttack($activePlayerId, 1);
+                $this->gainHealth($activePlayerId, $healing);
                 break;
             case '+2inf_+1card':
-                self::notifyAllPlayers('log', clienttranslate('${player_name} gains 2 ${influence_icon} and draws a card'),
-                    array('player_name' => self::getActivePlayerName(), 'influence_icon' => $this->getInfluenceIcon())
+                self::notifyAllPlayers('log', clienttranslate('${hero_name} gains 2 ${influence_icon} and draws a card'),
+                    array('hero_name' => self::getActiveHeroName($activePlayerId), 'influence_icon' => $this->getInfluenceIcon())
                 );
-                $playerId = self::getActivePlayerId();
-                $this->gainInfluence($playerId, 2);
-                $this->drawCard(array($playerId), 1);
+                $this->gainInfluence($activePlayerId, 2);
+                $this->drawCard(array($activePlayerId), 1);
                 break;
             case '+1att_+1hp_all':
-                self::notifyAllPlayers('log', clienttranslate('${player_name} gains 1 ${attack_icon} and ALL Heroes gain 1 ${health_icon}'),
-                    array('attack_icon' => $this->getAttackIcon(), 'health_icon' => $this->getHealthIcon())
+                self::notifyAllPlayers('log', clienttranslate('${hero_name} gains 1 ${attack_icon} and ALL Heroes gain 1 ${health_icon}'),
+                    array(
+                        'hero_name' => self::getActiveHeroName($activePlayerId),
+                        'attack_icon' => $this->getAttackIcon(),
+                        'health_icon' => $this->getHealthIcon())
                 );
-                $this->gainAttack(self::getActivePlayerId(), 1);
+                $this->gainAttack($activePlayerId, 1);
                 foreach ($this->getAllPlayerHealth() as $playerId => $player) {
                     $healing = min(array(10 - $player['health'], 1));
                     $this->gainHealth($playerId, $healing);
@@ -687,9 +706,9 @@ class HogwartsBattle extends Table
                     $executionComplete = false;
                 } else {
                     $healing = min(array(10 - $this->getHealthByHeroId($option), 2));
-                    self::notifyAllPlayers('log', clienttranslate('${player_name} gains ${healing} ${health_icon}'),
+                    self::notifyAllPlayers('log', clienttranslate('${hero_name} gains ${healing} ${health_icon}'),
                         array (
-                            'player_name' => $this->getHeroName($option),
+                            'hero_name' => $this->getHeroName($option),
                             'healing' => $healing,
                             'health_icon' => $this->getHealthIcon()
                         )
@@ -701,31 +720,30 @@ class HogwartsBattle extends Table
                 if ($option == 0) {
                     $executionComplete = false;
                 } else if ($option == 1) {
-                    self::notifyAllPlayers('log', clienttranslate('${player_name} gains 1 ${attack_icon}'),
-                        array('player_name' => self::getActivePlayerName(), 'attack_icon' => $this->getAttackIcon())
+                    self::notifyAllPlayers('log', clienttranslate('${hero_name} gains 1 ${attack_icon}'),
+                        array('hero_name' => self::getActiveHeroName($activePlayerId), 'attack_icon' => $this->getAttackIcon())
                     );
-                    $this->gainAttack(self::getActivePlayerId(), 1);
+                    $this->gainAttack($activePlayerId, 1);
                 } else {
-                    $playerId = self::getActivePlayerId();
-                    $healing = min(array(10 - $this->getHealth($playerId), 2));
-                    self::notifyAllPlayers('log', clienttranslate('${player_name} gains ${healing} ${health_icon}'),
+                    $healing = min(array(10 - $this->getHealth($activePlayerId), 2));
+                    self::notifyAllPlayers('log', clienttranslate('${hero_name} gains ${healing} ${health_icon}'),
                         array (
-                            'player_name' => self::getActivePlayerName(),
+                            'hero_name' => self::getActiveHeroName($activePlayerId),
                             'healing' => $healing,
                             'health_icon' => $this->getHealthIcon()
                         )
                     );
-                    $this->gainHealth($playerId, $healing);
+                    $this->gainHealth($activePlayerId, $healing);
                 }
                 break;
             case 'c[+2inf|+1inf_all]':
                 if ($option == 0) {
                     $executionComplete = false;
                 } else if ($option == 1) {
-                    self::notifyAllPlayers('log', clienttranslate('${player_name} gains 2 ${influence_icon}'),
-                        array('player_name' => self::getActivePlayerName(), 'influence_icon' => $this->getInfluenceIcon())
+                    self::notifyAllPlayers('log', clienttranslate('${hero_name} gains 2 ${influence_icon}'),
+                        array('hero_name' => self::getActiveHeroName($activePlayerId), 'influence_icon' => $this->getInfluenceIcon())
                     );
-                    $this->gainInfluence(self::getActivePlayerId(), 2);
+                    $this->gainInfluence($activePlayerId, 2);
                 } else {
                     self::notifyAllPlayers('log', clienttranslate('ALL Heroes gain 1 ${influence_icon}'),
                         array('influence_icon' => $this->getInfluenceIcon())
@@ -739,15 +757,15 @@ class HogwartsBattle extends Table
                 if ($option == 0) {
                     $executionComplete = false;
                 } else if ($option == 9) {
-                    self::notifyAllPlayers('log', clienttranslate('${player_name} gains 1 ${attack_icon}'),
-                        array('player_name' => self::getActivePlayerName(), 'attack_icon' => $this->getAttackIcon())
+                    self::notifyAllPlayers('log', clienttranslate('${hero_name} gains 1 ${attack_icon}'),
+                        array('hero_name' => self::getActiveHeroName($activePlayerId), 'attack_icon' => $this->getAttackIcon())
                     );
-                    $this->gainAttack(self::getActivePlayerId(), 1);
+                    $this->gainAttack($activePlayerId, 1);
                 } else {
                     $healing = min(array(10 - $this->getHealthByHeroId($option), 2));
-                    self::notifyAllPlayers('log', clienttranslate('${player_name} gains ${healing} ${health_icon}'),
+                    self::notifyAllPlayers('log', clienttranslate('${hero_name} gains ${healing} ${health_icon}'),
                         array (
-                            'player_name' => $this->getPlayerName($option),
+                            'hero_name' => $this->getHeroName($option),
                             'healing' => $healing,
                             'health_icon' => $this->getHealthIcon()
                         )
@@ -762,7 +780,7 @@ class HogwartsBattle extends Table
         if ($executionComplete) {
             self::notifyAllPlayers('updatePlayerStats', '', array('players' => $this->getPlayerStats()));
             self::notifyAllPlayers('acquirableHogwartsCards', '',
-                array('acquirable_hogwarts_cards' => $this->getAcquirableHogwartsCards(self::getActivePlayerId()))
+                array('acquirable_hogwarts_cards' => $this->getAcquirableHogwartsCards($activePlayerId))
             );
         }
         return $executionComplete;
@@ -770,24 +788,25 @@ class HogwartsBattle extends Table
 
     function executeDarkAction($sourceName, $action, $option = 0) {
         $executionComplete = true;
+        $activePlayerId = self::getActivePlayerId();
         switch ($action) {
             case '1dmg':
-                $this->decreaseHealth(self::getActivePlayerId(), 1);
-                self::notifyAllPlayers('updatePlayerStats', clienttranslate('${player_name} loses 1 ${health_icon}') . '${source_name}',
+                $this->decreaseHealth($activePlayerId, 1);
+                self::notifyAllPlayers('updatePlayerStats', clienttranslate('${hero_name} loses 1 ${health_icon}') . '${source_name}',
                     array (
                         'players' => self::getPlayerStats(),
-                        'player_name' => self::getActivePlayerName(),
+                        'hero_name' => self::getActiveHeroName($activePlayerId),
                         'health_icon' => $this->getHealthIcon(),
                         'source_name' => $sourceName != null ? " ($sourceName)" : ''
                     )
                 );
                 break;
             case '2dmg':
-                $this->decreaseHealth(self::getActivePlayerId(), 2);
-                self::notifyAllPlayers('updatePlayerStats', clienttranslate('${player_name} loses 2 ${health_icon}') . '${source_name}',
+                $this->decreaseHealth($activePlayerId, 2);
+                self::notifyAllPlayers('updatePlayerStats', clienttranslate('${hero_name} loses 2 ${health_icon}') . '${source_name}',
                     array (
                         'players' => self::getPlayerStats(),
-                        'player_name' => self::getActivePlayerName(),
+                        'hero_name' => self::getActiveHeroName($activePlayerId),
                         'health_icon' => $this->getHealthIcon(),
                         'source_name' => $sourceName != null ? " ($sourceName)" : ''
                     )
@@ -824,12 +843,12 @@ class HogwartsBattle extends Table
                 }
                 break;
             case '1dmg_1discard':
-                $this->decreaseHealth(self::getActivePlayerId(), 1);
+                $this->decreaseHealth($activePlayerId, 1);
                 self::incGameStateValue('cards_to_discard', 1);
-                self::notifyAllPlayers('updatePlayerStats', clienttranslate('${player_name} loses 1 ${health_icon} and has to discard 1 card') . '${source_name}',
+                self::notifyAllPlayers('updatePlayerStats', clienttranslate('${hero_name} loses 1 ${health_icon} and has to discard 1 card') . '${source_name}',
                     array (
                         'players' => self::getPlayerStats(),
-                        'player_name' => self::getActivePlayerName(),
+                        'hero_name' => self::getActiveHeroName($activePlayerId),
                         'health_icon' => $this->getHealthIcon(),
                         'source_name' => $sourceName != null ? " ($sourceName)" : ''
                     )
@@ -859,9 +878,9 @@ class HogwartsBattle extends Table
         if ($needToRevel) {
             $card = $this->darkArtsCards->pickCardForLocation('deck', 'hand');
             $darkArtsCard = $this->darkArtsCardsLibrary->getDarkArtsCard($card['type'], $card['type_arg']);
-            self::notifyAllPlayers('darkArtsCardRevealed', clienttranslate('${player_name} reveals') . ' <b>${dark_arts_card}</b>',
+            self::notifyAllPlayers('darkArtsCardRevealed', clienttranslate('${hero_name} reveals') . ' <b>${dark_arts_card}</b>',
                 array(
-                    'player_name' => self::getActivePlayerName(),
+                    'hero_name' => self::getActiveHeroName(),
                     'dark_arts_card' => $darkArtsCard->name,
                     'darkArtsCard' => $card
                 )
@@ -938,10 +957,10 @@ class HogwartsBattle extends Table
             self::setGameStateValue("villain_${slot}_dmg", $dmg);
             self::notifyAllPlayers(
                 'villainAttacked',
-                clienttranslate('${player_name} attacked ${villain_name} for 1 ${attack_token}'),
+                clienttranslate('${hero_name} attacked <b>${villain_name}</b> for 1 ${attack_token}'),
                 array (
                     'players' => $this->getPlayerStats(),
-                    'player_name' => self::getActivePlayerName(),
+                    'hero_name' => self::getActiveHeroName($playerId),
                     'villain_name' => $villainCard->name,
                     'attack_token' => $this->getAttackIcon()
                 )
@@ -955,9 +974,9 @@ class HogwartsBattle extends Table
             $this->villainCards->moveCard($card['id'], 'discard');
             self::notifyAllPlayers(
                 'villainDefeated',
-                clienttranslate('${player_name} defeated ${villain_name}'),
+                clienttranslate('${hero_name} defeated') . ' <b>${villain_name}</b>',
                 array (
-                    'player_name' => self::getActivePlayerName(),
+                    'hero_name' => self::getActiveHeroName($playerId),
                     'villain_name' => $villainCard->name,
                     'villain_id' => $villainCard->id,
                     'villain_slot' => $slot,
@@ -984,9 +1003,9 @@ class HogwartsBattle extends Table
         }
         $deck->moveCard($cardId, 'discard');
 
-        self::notifyAllPlayers('cardDiscarded', clienttranslate('${player_name} discards ${card_name}'),
+        self::notifyAllPlayers('cardDiscarded', clienttranslate('${hero_name} discards ${card_name}'),
             array(
-                'player_name' => self::getActivePlayerName(),
+                'hero_name' => self::getActiveHeroName($playerId),
                 'player_id' => $playerId,
                 'card_name' => $hogwartsCard->name,
                 'card_id' => $cardId,
@@ -1035,7 +1054,7 @@ class HogwartsBattle extends Table
 
         self::notifyAllPlayers(
             'acquireHogwartsCard',
-            clienttranslate('${player_name} acquires ${card_name} for ${card_cost} ${influence_token}'),
+            clienttranslate('${hero_name} acquires ${card_name} for ${card_cost} ${influence_token}'),
             array (
                 'players' => $this->getPlayerStats(),
                 'acquired_card' => $deck->getCard($newCardId),
@@ -1043,7 +1062,7 @@ class HogwartsBattle extends Table
                 'card_id' => $cardId,
                 'new_card_id' => $newCardId,
                 'player_id' => $playerId,
-                'player_name' => self::getActivePlayerName(),
+                'hero_name' => self::getActiveHeroName($playerId),
                 'card_name' => $hogwartsCard->name,
                 'card_cost' => $hogwartsCard->cost,
                 'influence_token' => $this->getInfluenceIcon()
@@ -1173,8 +1192,8 @@ class HogwartsBattle extends Table
         if (self::getGameStateValue('cards_to_discard') > 0) {
             self::setGameStateValue('cards_to_discard', 0);
             if ($this->getDeck(self::getActivePlayerId())->countCardInLocation('hand') == 0) {
-                self::notifyAllPlayers('logs', clienttranslate('${player_name} has no hand cards to discard'),
-                    array('player_name' => self::getActivePlayerName())
+                self::notifyAllPlayers('logs', clienttranslate('${hero_name} has no hand cards to discard'),
+                    array('hero_name' => self::getActiveHeroName())
                 );
             } else {
                 $this->gamestate->nextState('discard');
@@ -1232,9 +1251,9 @@ class HogwartsBattle extends Table
         }
         $deck->moveCard($cardId, 'played');
 
-        self::notifyAllPlayers('cardPlayed', clienttranslate('${player_name} plays ${card_name}'),
+        self::notifyAllPlayers('cardPlayed', clienttranslate('${hero_name} plays ${card_name}'),
             array(
-                'player_name' => self::getActivePlayerName(),
+                'hero_name' => self::getActiveHeroName($playerId),
                 'player_id' => $playerId,
                 'card_name' => $hogwartsCard->name,
                 'card_id' => $cardId,
@@ -1347,12 +1366,12 @@ class HogwartsBattle extends Table
         // Notify players
         self::notifyAllPlayers(
             'endTurn',
-            clienttranslate('${player_name} ends the turn'),
+            clienttranslate('${hero_name} ends the turn'),
             array (
                 'players' => self::getPlayerStats(),
                 'new_hogwarts_cards' => $newHogwartsCards,
                 'player_id' => $playerId,
-                'player_name' => self::getActivePlayerName(),
+                'hero_name' => self::getActiveHeroName($playerId),
             )
         );
         $this->gamestate->nextState();
@@ -1422,8 +1441,8 @@ class HogwartsBattle extends Table
         self::notifyPlayer($playerId, 'refillHandCards', '', array('new_hand_cards' => $newHandCards));
         self::notifyAllPlayers(
             'refillHandCardsLog',
-            clienttranslate('${player_name} draws 5 new cards'),
-            array ('player_name' => self::getActivePlayerName(), 'players' => self::getPlayerStats())
+            clienttranslate('${hero_name} draws 5 new cards'),
+            array ('hero_name' => self::getActiveHeroName($playerId), 'players' => self::getPlayerStats())
         );
         $this->gamestate->nextState();
     }
