@@ -1208,12 +1208,7 @@ class HogwartsBattle extends Table
         $activeVillainId = self::getGameStateValue('villain_turn_id');
         $villainCard = $this->villainCardsLibrary->villainCards[$activeVillainId];
         if ($villainCard->ability != null) {
-            self::notifyAllPlayers('villain_ability', '<b>${villain_name}</b> ' . clienttranslate('\'s ability resolves'),
-                array (
-                    'villain_name' => $villainCard->name
-                )
-            );
-            $this->executeDarkAction(null, $villainCard->ability);
+            $this->executeDarkAction($villainCard->name, $villainCard->ability);
         }
 
         // TODO check if a player is stunned

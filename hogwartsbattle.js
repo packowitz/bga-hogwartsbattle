@@ -1060,7 +1060,8 @@ function (dojo, declare) {
 
             this.locationMarkerTotal = notif.args.location_marker_total;
             $('location_marker_total').innerHTML = this.locationMarkerTotal;
-            this.location_counter.setValue(notif.args.location_marker);
+            this.location_marker_counter.setValue(notif.args.location_marker);
+            this.location_counter.incValue(1);
 
             this.placeLocationCard(notif.args.location_number);
         },

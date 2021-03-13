@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS `effect` (
 
 
 -- Example 2: add a custom field to the standard "player" table
-ALTER TABLE `player` ADD `player_hero` INT UNSIGNED NOT NULL DEFAULT '0';
-ALTER TABLE `player` ADD `player_health` INT UNSIGNED NOT NULL DEFAULT '10';
-ALTER TABLE `player` ADD `player_influence` INT UNSIGNED NOT NULL DEFAULT '0';
-ALTER TABLE `player` ADD `player_attack` INT UNSIGNED NOT NULL DEFAULT '0';
+ALTER TABLE `player` ADD `player_hero` INT NOT NULL DEFAULT '0';
+ALTER TABLE `player` ADD `player_health` INT NOT NULL DEFAULT '10';
+ALTER TABLE `player` ADD `player_influence` INT NOT NULL DEFAULT '0';
+ALTER TABLE `player` ADD `player_attack` INT NOT NULL DEFAULT '0';
