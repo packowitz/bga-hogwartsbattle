@@ -1060,6 +1060,7 @@ function (dojo, declare) {
 
             this.villainCounter.incValue(-1);
             if (this.villainCounter.getValue() == 0) {
+                let villainDeckElem = dojo.byId('villain_deck');
                 dojo.removeClass(villainDeckElem, 'villain_back');
                 dojo.addClass(villainDeckElem, 'villain_back_empty');
             }

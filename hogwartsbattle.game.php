@@ -695,7 +695,7 @@ class HogwartsBattle extends Table
                 break;
             case '+1att_+1hp':
                 $healing = min(array(10 - $this->getHealth($activePlayerId), 1));
-                self::notifyAllPlayers('log', clienttranslate('${hero_name} gains 1 {attack_icon} and ${healing} ${health_icon}'),
+                self::notifyAllPlayers('log', clienttranslate('${hero_name} gains 1 ${attack_icon} and ${healing} ${health_icon}'),
                     array (
                         'hero_name' => self::getActiveHeroName($activePlayerId),
                         'healing' => $healing,
