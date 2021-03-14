@@ -255,7 +255,6 @@ function (dojo, declare) {
                     dojo.style('dark_arts_events_wrapper', 'display', 'none');
                     break;
                 case 'initTurnEffects': {
-                    console.log(args);
                     for (let idx in args.args) {
                         let effect = args.args[idx];
                         this.addActiveEffect(effect);
@@ -360,25 +359,13 @@ function (dojo, declare) {
             {            
                 switch( stateName )
                 {
-/*               
-                 Example:
- 
-                 case 'myGameState':
-                    
-                    // Add 3 action buttons in the action status bar:
-                    
-                    this.addActionButton( 'button_1_id', _('Button 1 label'), 'onMyMethodToCall1' ); 
-                    this.addActionButton( 'button_2_id', _('Button 2 label'), 'onMyMethodToCall2' ); 
-                    this.addActionButton( 'button_3_id', _('Button 3 label'), 'onMyMethodToCall3' ); 
-                    break;
-*/
                     case 'revealDarkArtsCard': {
                         let label = args['reveal'] ? 'Reveal' : 'Done';
-                        this.addActionButton('revealId', label, 'onRevealDarkArtsCard');
+                        this.addActionButton('revealId', _(label), 'onRevealDarkArtsCard');
                         break;
                     }
                     case 'playerTurn': {
-                        this.addActionButton('endTurnId', 'End turn', 'onEndTurn');
+                        this.addActionButton('endTurnId', _('End turn'), 'onEndTurn', null, false, 'red');
                         break;
                     }
                     case 'chooseCardOption': {
@@ -513,6 +500,7 @@ function (dojo, declare) {
             let gameNr = parseInt(card.type);
             let cardNr = parseInt(card.type_arg);
             let villainId = (gameNr * 100) + cardNr;
+            $('villain_health_v' + slot).innerHTML = this.villainDescriptions[villainId].health;
             dojo.place(
               this.format_block( 'jstpl_active_villain_image', {
                   elementId: 'villain_' + villainId,

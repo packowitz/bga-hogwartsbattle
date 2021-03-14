@@ -60,7 +60,7 @@ class HogwartsBattle extends Table
 
             'dark_arts_cards_revealed' => 25,
 
-            'discard_source_is_dark' => 27, // villain or dark arts card => 1 else 0
+            'source_is_dark' => 27, // villain or dark arts card => 1 else 0
             'discard_return_state' => 28,
 
             'villains_max' => 30,
@@ -156,7 +156,7 @@ class HogwartsBattle extends Table
         self::setGameStateInitialValue('location_marker', 0);
 
         self::setGameStateInitialValue('dark_arts_cards_revealed', 0);
-        self::setGameStateInitialValue('discard_source_is_dark', 0);
+        self::setGameStateInitialValue('source_is_dark', 0);
         self::setGameStateInitialValue('discard_return_state', 0);
 
         self::setGameStateInitialValue('villains_max', $villains_max);
@@ -501,6 +501,9 @@ class HogwartsBattle extends Table
     }
 
     function decreaseHealth($playerId, $decrease) {
+        if ($decrease > 1 && $this->playerMax1Damage($playerId)) {
+            $decrease = 1;
+        }
         self::DbQuery("UPDATE player set player_health = player_health - ${decrease} where player_id = ${playerId}");
     }
 
@@ -534,6 +537,21 @@ class HogwartsBattle extends Table
 
     function getLocationIcon() {
         return '<div class="icon location_icon"></div>';
+    }
+
+    function playerMax1Damage($playerId): bool {
+        if (self::getGameStateValue('source_is_dark') == 1) {
+            $effects = $this->getActiveEffects(self::$TRIGGER_ON_DMG_DARK_ARTS_OR_VILLAIN);
+            foreach ($effects as $effectId => $effect) {
+                if ($effect['effect_key'] == 'max1dmg' && $effect['player_id'] == $playerId) {
+                    self::notityAllPlayers('log', clienttranslate('${effect_name} reduces damage to 1'),
+                        array ('i18n' => array('effect_name'), 'effect_name' => $effect['name'])
+                    );
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     function drawCard($playerIds, $numberOfCards) {
@@ -853,7 +871,6 @@ class HogwartsBattle extends Table
                 );
                 break;
             case '2dmg':
-                $this->decreaseHealth($activePlayerId, 2);
                 self::notifyAllPlayers('updatePlayerStats', clienttranslate('${hero_name} loses 2 ${health_icon}') . '${source_name}',
                     array (
                         'players' => self::getPlayerStats(),
@@ -862,6 +879,8 @@ class HogwartsBattle extends Table
                         'source_name' => $sourceName != null ? " ($sourceName)" : ''
                     )
                 );
+                $this->decreaseHealth($activePlayerId, 2);
+                self::notifyAllPlayers('updatePlayerStats', '', array('players' => $this->getPlayerStats()));
                 break;
             case '1dmg_all':
                 foreach (self::loadPlayersBasicInfos() as $playerId => $player) {
@@ -1066,9 +1085,11 @@ class HogwartsBattle extends Table
             )
         );
 
-        $effects = $this->getActiveEffects(self::$TRIGGER_ON_DISCARD);
-        foreach ($effects as $effectId => $effect) {
-            $this->executeDarkAction($effect['name'], $effect['effect_key']);
+        if (self::getGameStateValue('source_is_dark') == 1) {
+            $effects = $this->getActiveEffects(self::$TRIGGER_ON_DISCARD);
+            foreach ($effects as $effectId => $effect) {
+                $this->executeDarkAction($effect['name'], $effect['effect_key']);
+            }
         }
 
         if ($hogwartsCard->onDiscard != null) {
@@ -1234,7 +1255,7 @@ class HogwartsBattle extends Table
     }
 
     function stInitTurnEffects() {
-        self::setGameStateValue('discard_source_is_dark', 1);
+        self::setGameStateValue('source_is_dark', 1);
         self::setGameStateValue('discard_return_state', self::$STATE_DARK_ARTS);
         $this->gamestate->nextState();
     }
@@ -1245,11 +1266,12 @@ class HogwartsBattle extends Table
             $this->gamestate->nextState('discard');
             return;
         }
-        self::setGameStateValue('discard_source_is_dark', 0);
+        self::setGameStateValue('source_is_dark', 0);
         $stunned = $this->checkStunnedHeroes();
         if ($stunned) {
             $this->gamestate->nextState('discard');
         } else {
+            self::setGameStateValue('source_is_dark', 1);
             $this->gamestate->nextState('checksDone');
         }
     }
@@ -1279,6 +1301,7 @@ class HogwartsBattle extends Table
     }
 
     function stVillainAbilities() {
+        self::setGameStateValue('source_is_dark', 1);
         $activeVillainSlot = self::incGameStateValue('villain_turn_slot', 1);
         $villainsMax = self::getGameStateValue('villains_max');
         for($slot = $activeVillainSlot; $slot <= $villainsMax; $slot ++) {
@@ -1301,6 +1324,7 @@ class HogwartsBattle extends Table
             $this->executeDarkAction($villainCard->name, $villainCard->ability);
         }
 
+        self::setGameStateValue('source_is_dark', 0);
         self::setGameStateValue('discard_return_state', self::$STATE_VILLAINS);
         $stunned = $this->checkStunnedHeroes();
         if ($stunned) {
@@ -1311,7 +1335,7 @@ class HogwartsBattle extends Table
     }
 
     function stBeforePlayerTurn() {
-        // just a step for UI to prep for turn
+        self::setGameStateValue('source_is_dark', 0);
         $this->gamestate->nextState();
     }
 

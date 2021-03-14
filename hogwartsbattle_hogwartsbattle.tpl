@@ -162,7 +162,10 @@
     '<div class="whiteblock default_background big_card_wrapper" style="height: auto">\
         <h3 class="flex-space-between">\
             <div>{ACTIVE_VILLAIN}</div>\
-            <div><div class="icon attack_icon"></div><span id="damage_counter_v${villainNr}"></span></div>\
+            <div>\
+                <div class="icon health_icon"></div><span id="villain_health_v${villainNr}"></span>\
+                <div class="icon attack_icon" style="margin-left: 8px;"></div><span id="damage_counter_v${villainNr}"></span>\
+            </div>\
         </h3>\
         <div class="active_villain_background">\
             <div id="active_villain_${villainNr}" class="active_villain_wrapper"></div>\
