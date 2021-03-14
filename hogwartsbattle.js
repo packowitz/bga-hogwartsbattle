@@ -365,6 +365,10 @@ function (dojo, declare) {
                         break;
                     }
                     case 'playerTurn': {
+                        if (args['canAutoplay']) {
+                            this.addActionButton('autoplayButton', _('Autoplay'), 'onAutoplay');
+                            this.addTooltip('autoplayButton', _('Plays all simple hand cards in any order. Cards with choices, draw card abilities or when the order matters will not get played.'), '' );
+                        }
                         this.addActionButton('endTurnId', _('End turn'), 'onEndTurn', null, false, 'red');
                         break;
                     }
@@ -768,7 +772,16 @@ function (dojo, declare) {
             }
         },
 
-        onEndTurn: function (evt) {
+        onAutoplay: function(e) {
+            dojo.stopEvent(e);
+            let action = 'autoplay';
+            if (this.checkAction(action, true)) {
+                this.ajaxcall(`/${this.game_name}/${this.game_name}/${action}.html`, {
+                }, this, function(result) {}, function(is_error) {});
+            }
+        },
+
+        onEndTurn: function(evt) {
             dojo.stopEvent(evt);
             let action = 'endTurn';
             if (this.checkAction(action, true)) {

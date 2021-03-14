@@ -52,6 +52,7 @@ class HogwartsBattle extends Table
             'played_card_id' => 10,
             'play_card_option' => 11,
             'effect_id_with_option' => 12,
+            'autoplay' => 15,
 
             'game_number' => 20,
             'location_total' => 21,
@@ -149,6 +150,7 @@ class HogwartsBattle extends Table
         self::setGameStateInitialValue('played_card_id', 0);
         self::setGameStateInitialValue('play_card_option', 0);
         self::setGameStateInitialValue('effect_id_with_option', 0);
+        self::setGameStateInitialValue('autoplay', 0);
 
         self::setGameStateInitialValue('game_number', $gameNr);
         self::setGameStateInitialValue('location_total', count($this->locations[$gameNr]));
@@ -822,6 +824,21 @@ class HogwartsBattle extends Table
                     }
                 }
                 break;
+            case 'c[+2inf|+1card]':
+                if ($option == 0) {
+                    $executionComplete = false;
+                } else if ($option == 1) {
+                    self::notifyAllPlayers('log', clienttranslate('${hero_name} gains 2 ${influence_icon}'),
+                        array('hero_name' => self::getActiveHeroName($activePlayerId), 'influence_icon' => $this->getInfluenceIcon())
+                    );
+                    $this->gainInfluence($activePlayerId, 2);
+                } else {
+                    self::notifyAllPlayers('log', clienttranslate('${hero_name} draws a card'),
+                        array('hero_name' => self::getActiveHeroName($activePlayerId))
+                    );
+                    $this->drawCard(array($activePlayerId), 1);
+                }
+                break;
             case 'c[+1att|+2hp_any]':
                 if ($option == 0) {
                     $executionComplete = false;
@@ -994,6 +1011,11 @@ class HogwartsBattle extends Table
         $this->executeAction($hogwartsCard->onPlay, $option);
 
         $this->gamestate->nextState();
+    }
+
+    function autoplay() {
+        self::setGameStateValue('autoplay', 1);
+        $this->gamestate->nextState('autoplay');
     }
 
     function decideEffectOption($option) {
@@ -1202,6 +1224,20 @@ class HogwartsBattle extends Table
         );
     }
 
+    function argPlayerTurn() {
+        $canAutoplay = false;
+        $handCards = self::getDeck(self::getActivePlayerId())->getCardsInLocation('hand');
+        foreach ($handCards as $cardId => $card) {
+            if ($this->hogwartsCardsLibrary->getCard($card['type'], $card['type_arg'])->autoplay) {
+                $canAutoplay = true;
+                break;
+            }
+        }
+        return array(
+            'canAutoplay' => $canAutoplay
+        );
+    }
+
 //////////////////////////////////////////////////////////////////////////////
 //////////// Game state actions
 ////////////
@@ -1212,6 +1248,7 @@ class HogwartsBattle extends Table
     */
 
     function stInitTurn() {
+        self::setGameStateInitialValue('autoplay', 0);
         // reset dark_arts_cards and active villain
         self::setGameStateInitialValue('dark_arts_cards_revealed', 0);
         self::setGameStateInitialValue('villain_turn_slot', 0);
@@ -1411,7 +1448,24 @@ class HogwartsBattle extends Table
         self::setGameStateInitialValue('played_card_id', 0);
         self::setGameStateInitialValue('play_card_option', 0);
 
-        $this->gamestate->nextState();
+        if (self::getGameStateValue('autoplay') == 1) {
+            $this->gamestate->nextState("autoplay");
+        } else {
+            $this->gamestate->nextState("playerTurn");
+        }
+    }
+
+    function stAutoplay() {
+        $handCards = self::getDeck(self::getActivePlayerId())->getCardsInLocation('hand');
+        foreach ($handCards as $cardId => $card) {
+            if ($this->hogwartsCardsLibrary->getCard($card['type'], $card['type_arg'])->autoplay) {
+                self::setGameStateValue('played_card_id', $cardId);
+                $this->gamestate->nextState('playCard');
+                return;
+            }
+        }
+        self::setGameStateValue('autoplay', 0);
+        $this->gamestate->nextState('playerTurn');
     }
     
     function stVillainAttacked() {
