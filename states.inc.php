@@ -106,7 +106,7 @@ $machinestates = array(
         "description" => "",
         "type" => "game",
         "action" => "stDiscarded",
-        "transitions" => array("darkArts" => 21)
+        "transitions" => array("darkArts" => 21, "villain" => 30)
     ),
     30 => array(
         "name" => "villainAbilities",
@@ -120,7 +120,7 @@ $machinestates = array(
         "description" => "",
         "type" => "game",
         "action" => "stVillainTurn",
-        "transitions" => array("executed" => 30)
+        "transitions" => array("executed" => 30, "discard" => 24)
     ),
     34 => array(
         "name" => "beforePlayerTurn",

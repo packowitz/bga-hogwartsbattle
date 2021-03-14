@@ -430,12 +430,8 @@ class HogwartsBattle extends Table
         return self::getUniqueValueFromDB("SELECT player_health FROM player where player_id = ${playerId}");
     }
 
-    function isStunned($heroId) {
-        return self::getUniqueValueFromDB("SELECT player_stunned FROM player where player_hero = ${heroId}");
-    }
-
     function getNewlyStunnedPlayers() {
-        return self::getCollectionFromDb("SELECT player_id id, player_hero hero_id FROM player WHERE player_health <= 0 and stunned is false");
+        return self::getCollectionFromDb("SELECT player_id id, player_hero hero_id FROM player WHERE player_health <= 0 and player_stunned is false");
     }
 
     function setDiscards($playerId, $discards) {
@@ -466,6 +462,10 @@ class HogwartsBattle extends Table
 
     function getAllPlayerHealth() {
         return self::getCollectionFromDb("SELECT player_id id, player_health health, player_stunned stunned FROM player");
+    }
+
+    function setStunned($playerId) {
+        self::DbQuery("UPDATE player set player_health = 0, player_attack = 0, player_influence = 0, player_stunned = true where player_id = ${playerId}");
     }
 
     function recoverStunnedHeroes() {
@@ -553,7 +553,22 @@ class HogwartsBattle extends Table
         }
     }
 
-    function getChooseOptions($choiceAction) {
+    function checkStunnedHeroes(): bool {
+        $stunnedPlayers = $this->getNewlyStunnedPlayers();
+        if (count($stunnedPlayers) > 0) {
+            foreach ($stunnedPlayers as $playerId => $info) {
+                self::notifyAllPlayers('log', '${hero_name} is stunned', array('hero_name' => $this->getActiveHeroName($playerId)));
+                $this->setStunned($playerId);
+                $this->executeDarkAction(null, '+1loc_token');
+                $handCards = $this->getDeck($playerId)->countCardInLocation('hand');
+                $this->setDiscards($playerId, intdiv($handCards, 2));
+            }
+            return true;
+        }
+        return false;
+    }
+
+    function getChooseOptions($choiceAction): array {
         $choices = array();
         switch ($choiceAction) {
             case 'c[+1att|+2hp]':
@@ -579,7 +594,7 @@ class HogwartsBattle extends Table
         return $choices;
     }
 
-    function executeAction($action, $option = 0) {
+    function executeAction($action, $option = 0): bool {
         $executionComplete = true;
         $activePlayerId = self::getActivePlayerId();
         switch ($action) {
@@ -822,7 +837,7 @@ class HogwartsBattle extends Table
         return $executionComplete;
     }
 
-    function executeDarkAction($sourceName, $action, $option = 0) {
+    function executeDarkAction($sourceName, $action, $option = 0): bool {
         $executionComplete = true;
         $activePlayerId = self::getActivePlayerId();
         switch ($action) {
@@ -1231,17 +1246,19 @@ class HogwartsBattle extends Table
             return;
         }
         self::setGameStateValue('discard_source_is_dark', 0);
-
-        // TODO check if a player is stunned
-
-        $this->gamestate->nextState('checksDone');
+        $stunned = $this->checkStunnedHeroes();
+        if ($stunned) {
+            $this->gamestate->nextState('discard');
+        } else {
+            $this->gamestate->nextState('checksDone');
+        }
     }
 
     function stMultiDiscardCard() {
         $playersNeedToDiscard = array();
         foreach ($this->getPlayersNeedToDiscard() as $playerId => $info) {
             $toDiscard = $info['discards'];
-            $handCards = $this->getDeck(self::getActivePlayerId())->countCardInLocation('hand');
+            $handCards = $this->getDeck($playerId)->countCardInLocation('hand');
             if ($toDiscard > $handCards) {
                 $this->setDiscards($playerId, $handCards);
             }
@@ -1257,7 +1274,7 @@ class HogwartsBattle extends Table
         if ($returnState == self::$STATE_DARK_ARTS) {
             $this->gamestate->nextState('darkArts');
         } else if ($returnState == self::$STATE_VILLAINS) {
-            // TODO forward to villain state
+            $this->gamestate->nextState('villain');
         }
     }
 
@@ -1285,9 +1302,12 @@ class HogwartsBattle extends Table
         }
 
         self::setGameStateValue('discard_return_state', self::$STATE_VILLAINS);
-        // TODO check if a player is stunned
-
-        $this->gamestate->nextState('executed');
+        $stunned = $this->checkStunnedHeroes();
+        if ($stunned) {
+            $this->gamestate->nextState('discard');
+        } else {
+            $this->gamestate->nextState('executed');
+        }
     }
 
     function stBeforePlayerTurn() {
