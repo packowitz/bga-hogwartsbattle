@@ -999,13 +999,14 @@ function (dojo, declare) {
         },
 
         notif_acquireHogwartsCard: function(notif) {
-            this.acquirableHogwartsCards = notif.args.acquirable_hogwarts_cards;
-            this.checkAcquirableHogwartsCards();
 
             let cardElemId = 'hogwarts_card_' + notif.args.card_id;
 
-            // clean up can_acquire
             if (this.isCurrentPlayerActive()) {
+                this.acquirableHogwartsCards = notif.args.acquirable_hogwarts_cards;
+                this.checkAcquirableHogwartsCards();
+
+                // clean up can_acquire on acquired card
                 this.disconnect( $(cardElemId), 'onclick');
                 dojo.removeClass(dojo.byId(cardElemId), 'can_acquire');
             }

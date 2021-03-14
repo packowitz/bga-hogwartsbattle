@@ -830,7 +830,7 @@ class HogwartsBattle extends Table
         }
         if ($executionComplete) {
             self::notifyAllPlayers('updatePlayerStats', '', array('players' => $this->getPlayerStats()));
-            self::notifyAllPlayers('acquirableHogwartsCards', '',
+            self::notifyPlayer($activePlayerId, 'acquirableHogwartsCards', '',
                 array('acquirable_hogwarts_cards' => $this->getAcquirableHogwartsCards($activePlayerId))
             );
         }
