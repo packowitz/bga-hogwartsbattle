@@ -599,6 +599,10 @@ class HogwartsBattle extends Table
                 $choices['option_1'] = '+2 ' . $this->getInfluenceIcon();
                 $choices['option_2'] = clienttranslate('ALL Heroes') . ' +1 ' . $this->getInfluenceIcon();
                 break;
+            case 'c[+2inf|+1card]':
+                $choices['option_1'] = '+2 ' . $this->getInfluenceIcon();
+                $choices['option_2'] = clienttranslate('Draw a card');
+                break;
             case 'c[+2hp_any]':
                 foreach ($this->getHeroIdsInGame() as $heroId => $whatever) {
                     $choices["option_${heroId}"] = $this->getHeroName($heroId) . ' +2 ' . $this->getHealthIcon();
