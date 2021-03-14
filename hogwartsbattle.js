@@ -262,18 +262,6 @@ function (dojo, declare) {
                     }
                     break;
                 }
-                case 'discardCard': {
-                    if (this.isCurrentPlayerActive()) {
-                        this.extractCards(this.playerHand).forEach(card => {
-                            let cardNode = dojo.byId(card.id);
-                            if (!dojo.hasClass(cardNode, 'can_discard')) {
-                                dojo.addClass(cardNode, 'can_discard');
-                                this.connect($(card.id), 'onclick', 'onDiscardHandCard');
-                            }
-                        });
-                    }
-                    break;
-                }
                 case 'playerTurn': {
                     if (this.isCurrentPlayerActive()) {
                         this.extractCards(this.playerHand).forEach(card => {
@@ -404,6 +392,18 @@ function (dojo, declare) {
                         for (let option in args) {
                             let optId = option.substr('option_'.length);
                             this.addActionButton(option, args[option], (evt) => { this.onDecideOnEffectOption(evt, optId); });
+                        }
+                        break;
+                    }
+                    case 'discardCard': {
+                        if (this.isCurrentPlayerActive()) {
+                            this.extractCards(this.playerHand).forEach(card => {
+                                let cardNode = dojo.byId(card.id);
+                                if (!dojo.hasClass(cardNode, 'can_discard')) {
+                                    dojo.addClass(cardNode, 'can_discard');
+                                    this.connect($(card.id), 'onclick', 'onDiscardHandCard');
+                                }
+                            });
                         }
                         break;
                     }
@@ -940,6 +940,7 @@ function (dojo, declare) {
             dojo.subscribe('locationUpdate', this, "notif_locationUpdate");
             dojo.subscribe('locationRevealed', this, "notif_locationRevealed");
             dojo.subscribe('acquirableHogwartsCards', this, "notif_acquirableHogwartsCards");
+            dojo.subscribe('discardDone', this, "notif_discardDone");
         },
 
         notif_endTurn: function(notif) {
@@ -1083,6 +1084,13 @@ function (dojo, declare) {
             this.location_counter.incValue(1);
 
             this.placeLocationCard(notif.args.location_number);
+        },
+
+        notif_discardDone: function(notif) {
+            this.extractCards(this.playerHand).forEach(card => {
+                dojo.removeClass(dojo.byId(card.id), 'can_discard');
+                this.disconnect($(card.id), 'onclick');
+            });
         },
    });
 });

@@ -94,10 +94,18 @@ $machinestates = array(
     ),
     24 => array(
         "name" => "discardCard",
-        "description" => clienttranslate('${actplayer} must chose a card to discard'),
+        "description" => clienttranslate('Other players must chose a card to discard'),
         "descriptionmyturn" => clienttranslate('${you} must chose a card to discard'),
-        "type" => "activeplayer",
+        "type" => "multipleactiveplayer",
+        "action" => "stMultiDiscardCard",
         "possibleactions" => array("discard"),
+        "transitions" => array("next" => 25, "keepDiscarding" => 24)
+    ),
+    25 => array(
+        "name" => "discarded",
+        "description" => "",
+        "type" => "game",
+        "action" => "stDiscarded",
         "transitions" => array("darkArts" => 21)
     ),
     30 => array(

@@ -138,8 +138,7 @@ class HogwartsCards {
         $cards[] = $this->asCard($this->hogwartsCards[106], 4);
         $cards[] = $this->asCard($this->hogwartsCards[107]);
         $cards[] = $this->asCard($this->hogwartsCards[108]);
-        //$cards[] = $this->asCard($this->hogwartsCards[109]);
-        $cards[] = $this->asCard($this->hogwartsCards[109], 30);
+        $cards[] = $this->asCard($this->hogwartsCards[109]);
         $cards[] = $this->asCard($this->hogwartsCards[110]);
         $cards[] = $this->asCard($this->hogwartsCards[111]);
         return $cards;
