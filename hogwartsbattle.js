@@ -747,6 +747,12 @@ function (dojo, declare) {
             this.slideToObjectAndDestroy(elementId, "player_boards", 1000, 0 );
         },
 
+        playerHasActionsLeft: function() {
+            return dojo.query('.can_play').length > 0
+              || dojo.query('.can_acquire').length > 0
+              || dojo.query('.can_attack').length > 0;
+        },
+
 
         ///////////////////////////////////////////////////
         //// Player's action
@@ -783,6 +789,16 @@ function (dojo, declare) {
 
         onEndTurn: function(evt) {
             dojo.stopEvent(evt);
+            if (this.playerHasActionsLeft()) {
+                this.confirmationDialog( _('Are you sure to end your turn? You have actions left. Like hand cards, attack tokens or enough influence tokens to acquire another hogwarts card.'),
+                  dojo.hitch(this, function() { this.doEndTurn(); })
+                );
+            } else {
+                this.doEndTurn();
+            }
+        },
+
+        doEndTurn: function() {
             let action = 'endTurn';
             if (this.checkAction(action, true)) {
                 this.ajaxcall(`/${this.game_name}/${this.game_name}/${action}.html`, {
@@ -942,6 +958,7 @@ function (dojo, declare) {
             dojo.subscribe('locationRevealed', this, "notif_locationRevealed");
             dojo.subscribe('acquirableHogwartsCards', this, "notif_acquirableHogwartsCards");
             dojo.subscribe('discardDone', this, "notif_discardDone");
+            dojo.subscribe('important', this, "notif_important");
         },
 
         notif_endTurn: function(notif) {
@@ -1095,5 +1112,9 @@ function (dojo, declare) {
                 this.disconnect($(card.id), 'onclick');
             });
         },
+
+        notif_important: function(notif) {
+            this.showMessage(notif.args.message, 'error');
+        }
    });
 });

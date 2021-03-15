@@ -564,6 +564,9 @@ class HogwartsBattle extends Table
                 self::notifyAllPlayers('log', clienttranslate('${effect_name} prevents card drawing'),
                     array ('i18n' => array('effect_name'), 'effect_name' => $effect['name'])
                 );
+                foreach ($playerIds as $playerId) {
+                    self::notifyPlayer($playerId, 'important', '', array('message' => "${effect['name']} ". clienttranslate('prevents card drawing')));
+                }
                 return;
             }
         }
