@@ -172,13 +172,13 @@
             <div id="villain_drop_zone_v${villainNr}">\
                 <div id="villain_attack_tokens_v${villainNr}" class="villain_attack_tokens"></div>\
                 <div class="attack_villain_panel">\
-                    <a href="#" id="decrease_attack_v${villainNr}" class="bgabutton bgabutton_gray plus_minus_btn">&minus;</a>\
+                    <i id="decrease_attack_v${villainNr}" class="fa fa-lg fa-minus-square-o cliquable"></i>\
                     <a href="#" id="attack_villain_v${villainNr}" data-villain-slot="${villainNr}" class="bgabutton bgabutton_red">\
                         <span>Attack</span>\
                         <span id="attack_villain_counter_v${villainNr}"></span>\
                         <span class="icon attack_icon"></span>\
                     </a>\
-                    <a href="#" id="increase_attack_v${villainNr}" class="bgabutton bgabutton_gray plus_minus_btn">&plus;</a>\
+                    <i id="increase_attack_v${villainNr}" class="fa fa-lg fa-plus-square-o cliquable"></i>\
                 </div>\
             </div>\
         </div>\

@@ -405,10 +405,6 @@
     height: 30px;
 }
 
-.plus_minus_btn {
-    padding: 0 5px;
-}
-
 .can_attack .attack_villain_panel {
     display: flex;
 }

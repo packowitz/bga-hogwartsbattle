@@ -932,6 +932,7 @@ function (dojo, declare) {
 
         incAttack: function(e, slot) {
             dojo.stopEvent(e);
+            let dmg = this.villainDamage[slot];
             if (dmg < this.maxDamage(slot)) {
                 dmg ++;
                 this.villainDamage[slot] = dmg;
