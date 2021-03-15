@@ -28,14 +28,14 @@
 
 <div class="whiteblock hogwarts_background">
     <div class="player_board">
-        <div class="player_board_part" style="flex-grow: 1;">
-            <h3>{MY_HAND}</h3>
-            <div class="full-width card_height">
-                <div id="myhand"></div>
-            </div>
-        </div>
+        <h3 style="margin-right: 5px;">{MY_HAND}</h3>
+        <div class="player_stat" style="margin-right: 5px;"><div class="icon health_icon"></div><span id="my_health_counter">0</span></div>
+        <div class="player_stat" style="margin-right: 5px;"><div class="icon attack_icon"></div><span id="my_attack_counter">0</span></div>
+        <div class="player_stat" style="margin-right: 5px;"><div class="icon influence_icon"></div><span id="my_influence_counter">0</span></div>
     </div>
-
+    <div class="full-width card_height">
+        <div id="myhand"></div>
+    </div>
 </div>
 
 <div class="game_board">
@@ -169,7 +169,18 @@
         </h3>\
         <div class="active_villain_background">\
             <div id="active_villain_${villainNr}" class="active_villain_wrapper"></div>\
-            <div id="villain_drop_zone_v${villainNr}" data-villain-slot="${villainNr}" class="active_hero_drop_zone"></div>\
+            <div id="villain_drop_zone_v${villainNr}">\
+                <div id="villain_attack_tokens_v${villainNr}" class="villain_attack_tokens"></div>\
+                <div class="attack_villain_panel">\
+                    <a href="#" id="decrease_attack_v${villainNr}" class="bgabutton bgabutton_gray plus_minus_btn">&minus;</a>\
+                    <a href="#" id="attack_villain_v${villainNr}" data-villain-slot="${villainNr}" class="bgabutton bgabutton_red">\
+                        <span>Attack</span>\
+                        <span id="attack_villain_counter_v${villainNr}"></span>\
+                        <span class="icon attack_icon"></span>\
+                    </a>\
+                    <a href="#" id="increase_attack_v${villainNr}" class="bgabutton bgabutton_gray plus_minus_btn">&plus;</a>\
+                </div>\
+            </div>\
         </div>\
     </div>';
 

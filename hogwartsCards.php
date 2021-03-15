@@ -61,7 +61,7 @@ class HogwartsCards {
             5 => new HogwartsCard(0, 5, clienttranslate('Cleansweep 11'), 0, self::$itemType, true, '+1att', '+1inf_onDefVil', null, null,
                 array('onPlay' => clienttranslate('Gain 1 ${attack_token}'), 'onDefeatVillain' => clienttranslate('If you defeat a Villain, also gain 1 ${influence_token}'))),
 
-            6 => new HogwartsCard(0, 6, clienttranslate('Bertie Botts Every Flavour Beans'), false, 0, self::$itemType, '+1inf_+1att_xAllyPlayed', null, null, null,
+            6 => new HogwartsCard(0, 6, clienttranslate('Bertie Botts Every Flavour Beans'), 0, self::$itemType, false, '+1inf_+1att_xAllyPlayed', null, null, null,
                 array('onPlay' => clienttranslate('Gain 1 ${influence_token}. For each Ally played this turn, gain 1 ${attack_token}'))),
 
             7 => new HogwartsCard(0, 7, clienttranslate('Pigwidgeon'), 0, self::$allyType, false, 'c[+1att|+2hp]', null, null, null,

@@ -78,7 +78,8 @@ class action_hogwartsbattle extends APP_GameAction {
     public function attackVillain() {
         self::setAjaxMode();
         $slot = self::getArg("slot", AT_posint, true);
-        $this->game->attackVillain($slot);
+        $damage = self::getArg("damage", AT_posint, true);
+        $this->game->attackVillain($slot, $damage);
         self::ajaxResponse();
     }
 

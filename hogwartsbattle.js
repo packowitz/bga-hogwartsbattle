@@ -32,6 +32,9 @@ function (dojo, declare) {
             this.cardheight = 280;
             this.cardsPerRow = 16;
 
+            this.myHealthCounter = {}
+            this.myAttackCounter = {}
+            this.myInfluenceCounter = {}
             this.health_counters = {};
             this.attack_counters = {};
             this.influence_counters = {};
@@ -53,6 +56,7 @@ function (dojo, declare) {
             this.villainCounter = {};
             this.villainDmgCounter = {};
             this.villainDropZones = {};
+            this.villainDamage = {};
 
             this.discard_piles = {};
 
@@ -127,7 +131,7 @@ function (dojo, declare) {
                 this.villainDmgCounter[slot].create('damage_counter_v' + slot);
 
                 this.villainDropZones[slot] = new ebg.zone();
-                this.villainDropZones[slot].create(this, 'villain_drop_zone_v' + slot, 40, 40);
+                this.villainDropZones[slot].create(this, 'villain_attack_tokens_v' + slot, 40, 40);
                 this.villainDropZones[slot].setPattern('ellipticalfit');
 
                 let villainCard = gamedatas['villain_' + slot];
@@ -188,6 +192,19 @@ function (dojo, declare) {
                     this.placeHogwartsCard(card_discarded, this.discard_piles[player_id], 'player_discard_' + player_id, player_id);
                 }
             }
+
+            // my counters
+            this.myHealthCounter = new ebg.counter();
+            this.myHealthCounter.create('my_health_counter');
+            this.myHealthCounter.setValue(this.health_counters[this.player_id].getValue());
+
+            this.myAttackCounter = new ebg.counter();
+            this.myAttackCounter.create('my_attack_counter');
+            this.myAttackCounter.setValue(this.attack_counters[this.player_id].getValue());
+
+            this.myInfluenceCounter = new ebg.counter();
+            this.myInfluenceCounter.create('my_influence_counter');
+            this.myInfluenceCounter.setValue(this.influence_counters[this.player_id].getValue());
 
             // Dark Arts cards
             this.darkArtsCards = new ebg.zone();
@@ -273,11 +290,15 @@ function (dojo, declare) {
                         this.checkAcquirableHogwartsCards();
 
                         // can attack villains
-                        if (this.attack_counters[this.player_id].getValue() > 0) {
+                        if (this.myAttackCounter.getValue() > 0) {
                             for (let i = 1; i <= this.villainsMax; i++) {
                                 if (this.villains[i]) {
                                     dojo.addClass(dojo.byId('villain_drop_zone_v' + i), 'can_attack');
-                                    this.connect($('villain_drop_zone_v' + i), 'onclick', 'onAttackVillain');
+                                    this.villainDamage[i] = this.maxDamage(i);
+                                    $('attack_villain_counter_v' + i).innerHTML = this.villainDamage[i];
+                                    this.connect($('attack_villain_v' + i), 'onclick', (e) => this.onAttackVillain(e, i));
+                                    this.connect($('decrease_attack_v' + i), 'onclick', (e) => this.decAttack(e, i));
+                                    this.connect($('increase_attack_v' + i), 'onclick', (e) => this.incAttack(e, i));
                                 }
                             }
                         }
@@ -341,6 +362,8 @@ function (dojo, declare) {
                         for (let i = 1; i <= this.villainsMax; i++) {
                             dojo.removeClass(dojo.byId('villain_drop_zone_v' + i), 'can_attack');
                             this.disconnect($('villain_drop_zone_v' + i), 'onclick');
+                            this.disconnect($('decrease_attack_v' + i), 'onclick');
+                            this.disconnect($('increase_attack_v' + i), 'onclick');
                         }
                     }
                     break;
@@ -360,8 +383,11 @@ function (dojo, declare) {
                 switch( stateName )
                 {
                     case 'revealDarkArtsCard': {
-                        let label = args['reveal'] ? 'Reveal' : 'Done';
-                        this.addActionButton('revealId', _(label), 'onRevealDarkArtsCard');
+                        if (args['reveal']) {
+                            this.addActionButton('revealId', _('Reveal'), 'onRevealDarkArtsCard');
+                        } else {
+                            this.addActionButton('revealId', _('Done'), 'onRevealDarkArtsCard');
+                        }
                         break;
                     }
                     case 'playerTurn': {
@@ -418,6 +444,12 @@ function (dojo, declare) {
 
                     let influenceDiff = player.influence - this.influence_counters[playerId].getValue();
                     this.influence_counters[playerId].incValue(influenceDiff);
+
+                    if (playerId == this.player_id) {
+                        this.myHealthCounter.incValue(healthDiff);
+                        this.myAttackCounter.incValue(attackDiff);
+                        this.myInfluenceCounter.incValue(influenceDiff);
+                    }
 
                     let handCardsDiff = player.hand_card_count - this.handCards_counters[playerId].getValue();
                     this.handCards_counters[playerId].incValue(handCardsDiff);
@@ -584,7 +616,7 @@ function (dojo, declare) {
                 for (let idx in hogwartsCards) {
                     let card = hogwartsCards[idx];
                     this.placeHogwartsCard(card, this.playerHand, 'myhand', this.player_id);
-                    if (this.isCurrentPlayerActive() && this.currentState == 'playCard') {
+                    if (this.isCurrentPlayerActive() && this.currentState == 'playerTurn') {
                         let elementId = 'hogwarts_card_' + card.id + '_p' + this.player_id;
                         dojo.addClass(dojo.byId(elementId), 'can_play');
                         this.connect( $(elementId), 'onclick', 'onPlayHandCard');
@@ -753,6 +785,15 @@ function (dojo, declare) {
               || dojo.query('.can_attack').length > 0;
         },
 
+        maxDamage: function(slot) {
+            let myAttackTokens = this.myAttackCounter.getValue();
+            if (this.myAttackCounter.getValue() > 0) {
+                let villainMaxDmg = this.villains[slot].health - this.villainDmgCounter[slot].getValue();
+                return Math.min(villainMaxDmg, myAttackTokens);
+            }
+            return 0;
+        },
+
 
         ///////////////////////////////////////////////////
         //// Player's action
@@ -866,16 +907,35 @@ function (dojo, declare) {
             }
         },
 
-        onAttackVillain: function(evt) {
+        onAttackVillain: function(evt, slot) {
             dojo.stopEvent(evt);
-            let slot = parseInt(evt.target.dataset.villainSlot);
             console.log('attack villain ' + slot);
             let action = 'attackVillain';
             if (this.checkAction(action, true)) {
                 this.ajaxcall(`/${this.game_name}/${this.game_name}/${action}.html`, {
                     slot : slot,
+                    damage: this.villainDamage[slot],
                     lock : true
                 }, this, function(result) {}, function(is_error) {});
+            }
+        },
+
+        decAttack: function(e, slot) {
+            dojo.stopEvent(e);
+            let dmg = this.villainDamage[slot];
+            if (dmg > 1) {
+                dmg --;
+                this.villainDamage[slot] = dmg;
+                $('attack_villain_counter_v' + slot).innerHTML = dmg;
+            }
+        },
+
+        incAttack: function(e, slot) {
+            dojo.stopEvent(e);
+            if (dmg < this.maxDamage(slot)) {
+                dmg ++;
+                this.villainDamage[slot] = dmg;
+                $('attack_villain_counter_v' + slot).innerHTML = dmg;
             }
         },
 

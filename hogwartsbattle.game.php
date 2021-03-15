@@ -546,7 +546,7 @@ class HogwartsBattle extends Table
             $effects = $this->getActiveEffects(self::$TRIGGER_ON_DMG_DARK_ARTS_OR_VILLAIN);
             foreach ($effects as $effectId => $effect) {
                 if ($effect['effect_key'] == 'max1dmg' && $effect['player_id'] == $playerId) {
-                    self::notityAllPlayers('log', clienttranslate('${effect_name} reduces damage to 1'),
+                    self::notifyAllPlayers('log', clienttranslate('${effect_name} reduces damage to 1'),
                         array ('i18n' => array('effect_name'), 'effect_name' => $effect['name'])
                     );
                     return true;
@@ -1037,31 +1037,36 @@ class HogwartsBattle extends Table
         $this->gamestate->nextState();
     }
 
-    function attackVillain($slot) {
+    function attackVillain($slot, $damage) {
         self::checkAction('attackVillain');
 
         $playerId = self::getActivePlayerId();
         $attack = $this->getPlayerAttack($playerId);
-        if ($attack < 1) {
+        if ($attack < $damage) {
             throw new feException('You don\'t have any attack tokens to attack a villain');
         }
-
-        $dmg = self::getGameStateValue("villain_${slot}_dmg") + 1;
-        $this->decreaseAttack($playerId, 1);
 
         $cards = $this->villainCards->getPlayerHand($slot);
         $card = reset($cards);
         $villainCard = $this->villainCardsLibrary->getVillainCard($card['type'], $card['type_arg']);
 
+        $dmg = self::getGameStateValue("villain_${slot}_dmg") + $damage;
+        if ($dmg > $villainCard->health) {
+            throw new feException('Villain doesn\'t have enough health to suffer ' . $damage . ' damage');
+        }
+
+        $this->decreaseAttack($playerId, $damage);
+
         if ($dmg < $villainCard->health) {
             self::setGameStateValue("villain_${slot}_dmg", $dmg);
             self::notifyAllPlayers(
                 'villainAttacked',
-                clienttranslate('${hero_name} attacked <b>${villain_name}</b> for 1 ${attack_token}'),
+                clienttranslate('${hero_name} attacks <b>${villain_name}</b> for ${damage} ${attack_token}'),
                 array (
                     'players' => $this->getPlayerStats(),
                     'hero_name' => self::getActiveHeroName($playerId),
                     'villain_name' => $villainCard->name,
+                    'damage' => $damage,
                     'attack_token' => $this->getAttackIcon()
                 )
             );

@@ -355,6 +355,11 @@
     height: 94px;
 }
 
+.villain_attack_tokens {
+    width: 200px;
+    height: 70px;
+}
+
 .acquired_hogwarts_card {
     position: absolute;
 }
@@ -392,6 +397,22 @@
     display: flex;
 }
 
+.attack_villain_panel {
+    display: none;
+    align-items: center;
+    justify-content: space-around;
+    width: 200px;
+    height: 30px;
+}
+
+.plus_minus_btn {
+    padding: 0 5px;
+}
+
+.can_attack .attack_villain_panel {
+    display: flex;
+}
+
 .can_play {
     border-radius: 5px;
     animation: pulse 1s infinite alternate;
@@ -410,11 +431,11 @@
     cursor: pointer;
 }
 
-.can_attack {
-    border-radius: 15px;
-    animation: pulse 1s infinite alternate;
-    cursor: pointer;
-}
+/*.can_attack {*/
+/*    border-radius: 15px;*/
+/*    animation: pulse 1s infinite alternate;*/
+/*    cursor: pointer;*/
+/*}*/
 
 @keyframes pulse {
     0% {
