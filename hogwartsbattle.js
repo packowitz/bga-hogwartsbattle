@@ -768,7 +768,7 @@ function (dojo, declare) {
         },
 
         placeMarkerToLocation: function(nr) {
-            let elementId = 'location_' + this.locationMarkerTotal + '_' + nr;
+            let elementId = 'location_' + this.locationNr + '_' + this.locationMarkerTotal + '_' + nr;
             dojo.place(this.format_block( 'jstpl_location_token', {
                 elementId: elementId
             }), 'overall_player_board_' + this.currentPlayerId);
@@ -778,7 +778,7 @@ function (dojo, declare) {
         },
 
         removeMarkerFromLocation: function(nr) {
-            let elementId = 'location_' + this.locationMarkerTotal + '_' + nr;
+            let elementId = 'location_' + this.locationNr + '_' + this.locationMarkerTotal + '_' + nr;
             this.slideToObjectAndDestroy(elementId, "player_boards", 1000, 0 );
         },
 
@@ -1208,8 +1208,8 @@ function (dojo, declare) {
             this.locationMarker = notif.args.location_marker;
             this.location_marker_counter.setValue(this.locationMarker);
             this.location_counter.incValue(1);
-
             this.placeLocationCard(notif.args.location_number);
+
             for (let i = 1; i <= this.locationMarker; i++) {
                 this.placeMarkerToLocation(i);
             }
