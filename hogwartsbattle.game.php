@@ -54,7 +54,6 @@ class HogwartsBattle extends Table
             'effect_id_with_option' => 12,
             'autoplay' => 15,
 
-            'game_number' => 20,
             'location_total' => 21,
             'location_number' => 22,
             'location_marker' => 23,
@@ -69,7 +68,14 @@ class HogwartsBattle extends Table
             'villain_2_dmg' => 32,
             'villain_3_dmg' => 33,
             'villain_turn_slot' => 40,
-            'villain_turn_id' => 41
+            'villain_turn_id' => 41,
+
+            // game options
+            'game_number' => 101,
+            'location_first_marker' => 103,
+            'location_reveal_marker' => 104,
+            'hero_selection' => 105,
+            'allow_hogwarts_cards_replace' => 108
         ) );
 
         $this->hogwartsCardsLibrary = new HogwartsCards();
@@ -143,7 +149,7 @@ class HogwartsBattle extends Table
         
         /************ Start the game initialization *****/
 
-        $gameNr = 1; // TODO comes from game options
+        $gameNr = self::getGameStateValue('game_number');
         $villains_max = min(array($gameNr, 3));
 
         // Init global values with their initial values
@@ -152,7 +158,6 @@ class HogwartsBattle extends Table
         self::setGameStateInitialValue('effect_id_with_option', 0);
         self::setGameStateInitialValue('autoplay', 0);
 
-        self::setGameStateInitialValue('game_number', $gameNr);
         self::setGameStateInitialValue('location_total', count($this->locations[$gameNr]));
         self::setGameStateInitialValue('location_number', 1);
         self::setGameStateInitialValue('location_marker', 0);

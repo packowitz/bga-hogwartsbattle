@@ -52,6 +52,56 @@ $game_options = array(
 
     */
 
+    101 => array(
+        'name' => totranslate('Game'),
+        'values' => array(
+            1 => array('name' => totranslate('Game 1')),
+//            2 => array('name' => totranslate('Game 2')),
+//            3 => array('name' => totranslate('Game 3')),
+//            4 => array('name' => totranslate('Game 4')),
+//            5 => array('name' => totranslate('Game 5')),
+//            6 => array('name' => totranslate('Game 6')),
+//            7 => array('name' => totranslate('Game 7'))
+        ),
+        'default' => 1
+    ),
+    103 => array(
+        'name' => totranslate('Marker on first Location'),
+        'values' => array(
+            0 => array('name' => totranslate('0 - Easy')),
+            1 => array('name' => totranslate('1 - Advanced')),
+            2 => array('name' => totranslate('2 - Expert')),
+            3 => array('name' => totranslate('3 - Suicide'))
+        ),
+        'default' => 0
+    ),
+    104 => array(
+        'name' => totranslate('Marker on new Location'),
+        'values' => array(
+            0 => array('name' => totranslate('0 - Easy')),
+            1 => array('name' => totranslate('1 - Advanced')),
+            2 => array('name' => totranslate('2 - Expert')),
+            3 => array('name' => totranslate('3 - Suicide'))
+        ),
+        'default' => 0
+    ),
+    105 => array(
+        'name' => totranslate('Hero selection'),
+        'values' => array(
+            0 => array('name' => totranslate('Random')),
+            1 => array('name' => totranslate('Select'))
+        ),
+        'default' => 0
+    ),
+    108 => array(
+        'name' => totranslate('Allow replacing Hogwarts cards'),
+        'values' => array(
+            0 => array('name' => totranslate('Not allowed'), 'description' => totranslate('Basic rule: Players are not allowed to replace Hogwarts cards')),
+            1 => array('name' => totranslate('Allowed'), 'description' => totranslate('Rule from first expansion: Instead of acquiring a Hogwarts card, active player may replace all Hogwarts cards'))
+        ),
+        'default' => 0
+    ),
+
 );
 
 
