@@ -160,7 +160,7 @@ class HogwartsBattle extends Table
 
         self::setGameStateInitialValue('location_total', count($this->locations[$gameNr]));
         self::setGameStateInitialValue('location_number', 1);
-        self::setGameStateInitialValue('location_marker', 0);
+        self::setGameStateInitialValue('location_marker', self::getGameStateValue('location_first_marker'));
 
         self::setGameStateInitialValue('dark_arts_cards_revealed', 0);
         self::setGameStateInitialValue('source_is_dark', 0);
@@ -1582,13 +1582,13 @@ class HogwartsBattle extends Table
         if ($locationNumber < $locationTotal) {
             $locationNumber ++;
             self::setGameStateValue('location_number', $locationNumber);
-            self::setGameStateValue('location_marker', 0); // TODO game option to have new location start with 1 or 2 tokens
+            self::setGameStateValue('location_marker', self::getGameStateValue('location_reveal_marker'));
 
             self::notifyAllPlayers('locationRevealed', '<b>' . clienttranslate('New Location revealed') . '</b>',
                 array (
                     'location_number' => $locationNumber,
                     'location_marker_total' => $this->locations[self::getGameStateValue('game_number')][$locationNumber]['max_tokens'],
-                    'location_marker' => 0
+                    'location_marker' => self::getGameStateValue('location_marker')
                 )
             );
 
