@@ -62,6 +62,7 @@ function (dojo, declare) {
 
             this.acquirableHogwartsCards = [];
             this.visibleEffectIds = [];
+            this.activeEffects = [];
         },
         
         /*
@@ -718,6 +719,8 @@ function (dojo, declare) {
                         this.addActiveEffect(effect);
                     }
                 }
+
+                this.activeEffects = effects;
             }
         },
 
@@ -851,11 +854,46 @@ function (dojo, declare) {
         onAcquireHogwartsCard: function(e) {
             dojo.stopEvent(e);
             let cardId = parseInt(e.target.dataset.cardId);
-            console.log('acquire hogwarts card ' + cardId);
+            let cardTypeId = parseInt(e.target.dataset.cardTypeId);
+            let cardType = this.hogwartsCardDescriptions[cardTypeId].type;
+            console.log('acquire hogwarts ' + cardType + ' card ' + cardId);
+
+            let canPutOnTop = false;
+            if (this.activeEffects) {
+                for (let idx in this.activeEffects) {
+                    let effect = this.activeEffects[idx];
+                    if (effect.effect_trigger == 'onAcquire') {
+                        let effectKey = effect.effect_key;
+                        if (effectKey == 'items_top_deck' && cardType == 'ITEM') {
+                            canPutOnTop = true;
+                        }
+                        if (effectKey == 'spells_top_deck' && cardType == 'SPELL') {
+                            canPutOnTop = true;
+                        }
+                        if (effectKey == 'allies_top_deck' && cardType == 'ALLY') {
+                            canPutOnTop = true;
+                        }
+                    }
+                };
+            }
+
+            if (canPutOnTop) {
+                this.multipleChoiceDialog(
+                  _('You may put this card on top of your deck'), [_('Discard pile'), _('Deck')],
+                  dojo.hitch(this, function(choice) {
+                      this.doAcquireHogwartsCard(cardId, choice);
+                  }));
+            } else {
+                this.doAcquireHogwartsCard(cardId, 0);
+            }
+        },
+
+        doAcquireHogwartsCard: function(cardId, option) {
             let action = 'acquireHogwartsCard';
             if (this.checkAction(action, true)) {
                 this.ajaxcall(`/${this.game_name}/${this.game_name}/${action}.html`, {
                     id : cardId,
+                    option: option,
                     lock : true
                 }, this, function(result) {}, function(is_error) {});
             }
@@ -1090,17 +1128,23 @@ function (dojo, declare) {
                 dojo.removeClass(dojo.byId(cardElemId), 'can_acquire');
             }
 
-            // move acquired hogwarts card to players discard pile
-            this.hogwartsCards.removeFromZone(cardElemId);
-            let cardElem = dojo.byId(cardElemId);
-            let newElemId = 'hogwarts_card_' + notif.args.new_card_id + '_p' + notif.args.player_id;
-            dojo.setAttr(cardElem, 'id', newElemId);
-            dojo.setAttr(cardElem, 'data-card-id', notif.args.new_card_id);
-            this.discard_piles[notif.args.player_id].placeInZone(newElemId);
-            this.addHogwartsCardTooltip(newElemId, parseInt(cardElem.dataset.cardTypeId));
+            if (notif.args.move_card_to_deck) {
+                this.hogwartsCards.removeFromZone(cardElemId);
+                this.slideToObjectAndDestroy(cardElemId, "player_boards", 1000, 0 );
+                this.updatePlayerStats(notif.args.players);
+            } else {
+                // move acquired hogwarts card to players discard pile
+                this.hogwartsCards.removeFromZone(cardElemId);
+                let cardElem = dojo.byId(cardElemId);
+                let newElemId = 'hogwarts_card_' + notif.args.new_card_id + '_p' + notif.args.player_id;
+                dojo.setAttr(cardElem, 'id', newElemId);
+                dojo.setAttr(cardElem, 'data-card-id', notif.args.new_card_id);
+                this.discard_piles[notif.args.player_id].placeInZone(newElemId);
+                this.addHogwartsCardTooltip(newElemId, parseInt(cardElem.dataset.cardTypeId));
 
-            // update player stats with timeout to make sure the acquired card is in discard pile
-            setTimeout(() => this.updatePlayerStats(notif.args.players), 1000);
+                // update player stats with timeout to make sure the acquired card is in discard pile
+                setTimeout(() => this.updatePlayerStats(notif.args.players), 1000);
+            }
         },
 
         notif_updatePlayerStats: function(notif) {

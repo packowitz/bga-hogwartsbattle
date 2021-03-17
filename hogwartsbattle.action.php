@@ -44,7 +44,8 @@ class action_hogwartsbattle extends APP_GameAction {
     public function acquireHogwartsCard() {
         self::setAjaxMode();
         $card_id = self::getArg("id", AT_posint, true);
-        $this->game->acquireHogwartsCard($card_id);
+        $option = self::getArg("option", AT_posint, false, 0);
+        $this->game->acquireHogwartsCard($card_id, $option);
         self::ajaxResponse();
     }
 

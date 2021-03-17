@@ -1138,7 +1138,7 @@ class HogwartsBattle extends Table
         }
     }
 
-    function acquireHogwartsCard($cardId) {
+    function acquireHogwartsCard($cardId, $option) {
         self::checkAction("acquireHogwartsCard");
         $playerId = self::getActivePlayerId();
         $card = $this->hogwartsCards->getCard($cardId);
@@ -1152,11 +1152,29 @@ class HogwartsBattle extends Table
 
         // Add acquired card to discard pile
         $this->hogwartsCards->moveCard($cardId, 'dev0');
-        // TODO check effects on acquire_hogwarts_card
+
+        $putOnTopOfDeck = false;
+        if ($option == 1) {
+            $effects = $this->getActiveEffects(self::$TRIGGER_ON_ACQUIRE);
+            foreach ($effects as $effectId => $effect) {
+                $effectKey = $effect['effect_key'];
+                if (($effectKey == 'items_top_deck' && $hogwartsCard->type == HogwartsCards::$itemType)
+                    || ($effectKey == 'spells_top_deck' && $hogwartsCard->type == HogwartsCards::$spellType)
+                    || ($effectKey == 'allies_top_deck' && $hogwartsCard->type == HogwartsCards::$allyType)) {
+                    $putOnTopOfDeck = true;
+                    break;
+                }
+            }
+        }
+
         $deck = self::getDeck($playerId);
         $deck->createCards(array($this->hogwartsCardsLibrary->asCard($hogwartsCard)), 'new', $playerId);
         $newCardId = key($deck->getCardsInLocation('new'));
-        $deck->moveCard($newCardId, 'discard');
+        if ($putOnTopOfDeck) {
+            $deck->insertCardOnExtremePosition($newCardId, 'deck', true);
+        } else {
+            $deck->moveCard($newCardId, 'discard');
+        }
 
         self::notifyAllPlayers(
             'acquireHogwartsCard',
@@ -1167,6 +1185,7 @@ class HogwartsBattle extends Table
                 'acquirable_hogwarts_cards' => $this->getAcquirableHogwartsCards($playerId),
                 'card_id' => $cardId,
                 'new_card_id' => $newCardId,
+                'move_card_to_deck' => $putOnTopOfDeck,
                 'player_id' => $playerId,
                 'hero_name' => self::getActiveHeroName($playerId),
                 'card_name' => $hogwartsCard->name,
@@ -1446,8 +1465,8 @@ class HogwartsBattle extends Table
                 case 'items_top_deck':
                     $this->addEffect('items_top_deck', self::$TRIGGER_ON_ACQUIRE, $hogwartsCard->name, self::$SOURCE_HOGWARTS_CARD, $cardId, $hogwartsCard->typeId, $playerId);
                     break;
-                case 'allies_on_top':
-                    $this->addEffect('allies_on_top', self::$TRIGGER_ON_ACQUIRE, $hogwartsCard->name, self::$SOURCE_HOGWARTS_CARD, $cardId, $hogwartsCard->typeId, $playerId);
+                case 'allies_top_deck':
+                    $this->addEffect('allies_top_deck', self::$TRIGGER_ON_ACQUIRE, $hogwartsCard->name, self::$SOURCE_HOGWARTS_CARD, $cardId, $hogwartsCard->typeId, $playerId);
                     break;
             }
             $effectsModified = true;

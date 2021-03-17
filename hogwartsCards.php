@@ -36,7 +36,7 @@ class HogwartsCards {
     public static $hermioneId = 3;
     public static $nevilleId = 4;
     public static $spellType = 'SPELL';
-    public static $itemType = 'ARTIFACT';
+    public static $itemType = 'ITEM';
     public static $allyType = 'ALLY';
 
     public $hogwartsCards;
@@ -112,7 +112,7 @@ class HogwartsCards {
             106 => new HogwartsCard(1, 6, clienttranslate('Quidditch Gear'), 3, self::$itemType, true, '+1att_+1hp', null, null, null,
                 array('onPlay' => clienttranslate('Gain 1 ${attack_token} and 1 ${health_icon}'))),
 
-            107 => new HogwartsCard(1, 7, clienttranslate('Sorting Hat'), 4, self::$itemType, true, '+2inf', 'allies_on_top', null, null,
+            107 => new HogwartsCard(1, 7, clienttranslate('Sorting Hat'), 4, self::$itemType, true, '+2inf', 'allies_top_deck', null, null,
                 array('onPlay' => clienttranslate('Gain 2 ${influence_token}'), 'onAcquire' => clienttranslate('You may put Allies you acquire on top of your deck instead of in your discard pile'))),
 
             108 => new HogwartsCard(1, 8, clienttranslate('Golden Snitch'), 5, self::$itemType, false, '+2inf_+1card', null, null, null,
