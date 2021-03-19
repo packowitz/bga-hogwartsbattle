@@ -89,7 +89,7 @@ $game_options = array(
         'name' => totranslate('Hero selection'),
         'values' => array(
             0 => array('name' => totranslate('Random')),
-            1 => array('name' => totranslate('Select'))
+//            1 => array('name' => totranslate('Select'))
         ),
         'default' => 0
     ),
@@ -97,7 +97,7 @@ $game_options = array(
         'name' => totranslate('Allow replacing Hogwarts cards'),
         'values' => array(
             0 => array('name' => totranslate('Not allowed'), 'description' => totranslate('Basic rule: Players are not allowed to replace Hogwarts cards')),
-            1 => array('name' => totranslate('Allowed'), 'description' => totranslate('Rule from first expansion: Instead of acquiring a Hogwarts card, active player may replace all Hogwarts cards'))
+//            1 => array('name' => totranslate('Allowed'), 'description' => totranslate('Rule from first expansion: Instead of acquiring a Hogwarts card, active player may replace all Hogwarts cards'))
         ),
         'default' => 0
     ),
