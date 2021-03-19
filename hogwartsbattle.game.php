@@ -204,9 +204,36 @@ class HogwartsBattle extends Table
 
         // Init game statistics
         // (note: statistics used in this file must be defined in your stats.inc.php file)
-        //self::initStat( 'table', 'table_teststat1', 0 );    // Init a table statistics
-        //self::initStat( 'player', 'player_teststat1', 0 );  // Init a player statistics (for all players)
+        self::initStat('table', 'villains_defeated', 0);
+        self::initStat('table', 'locations_lost', 0);
+        self::initStat('table', 'locations_token_added', 0);
+        self::initStat('table', 'locations_token_removed', 0);
+        self::initStat('table', 'locations_full_prevention', 0);
 
+        self::initStat('player', 'hero', 0);
+        self::initStat('player', 'turns_number', 0);
+        self::initStat('player', 'gained_influence', 0);
+        self::initStat('player', 'influence_spent_on_acquire', 0);
+        self::initStat('player', 'cards_acquired', 0);
+        self::initStat('player', 'items_acquired', 0);
+        self::initStat('player', 'spells_acquired', 0);
+        self::initStat('player', 'allies_acquired', 0);
+        self::initStat('player', 'gained_attack', 0);
+        self::initStat('player', 'villains_damaged', 0);
+        self::initStat('player', 'villains_defeated', 0);
+        self::initStat('player', 'healed_self', 0);
+        self::initStat('player', 'healed_others', 0);
+        self::initStat('player', 'healed_by_others', 0);
+        self::initStat('player', 'health_lost', 0);
+        self::initStat('player', 'stunned', 0);
+        self::initStat('player', 'dark_arts_drawn', 0);
+        self::initStat('player', 'cards_discarded', 0);
+        self::initStat('player', 'cards_drawn', 0);
+        self::initStat('player', 'locations_token_removed', 0);
+
+        foreach ($playerHeroes as $playerId => $heroId) {
+            self::setStat($heroId, 'hero', $playerId);
+        }
 
         // Activate first player (which is in general a good idea :) )
         $this->activeNextPlayer();
@@ -472,6 +499,7 @@ class HogwartsBattle extends Table
     }
 
     function setStunned($playerId) {
+        self::incStat(1, 'stunned', $playerId);
         self::DbQuery("UPDATE player set player_health = 0, player_attack = 0, player_influence = 0, player_stunned = true where player_id = ${playerId}");
     }
 
@@ -484,7 +512,12 @@ class HogwartsBattle extends Table
     }
 
     function gainInfluence($playerId, $gain) {
+        self::incStat($gain, 'gained_influence', $playerId);
         self::DbQuery("UPDATE player set player_influence = player_influence + ${gain} where player_id = ${playerId}");
+    }
+
+    function decreaseInfluence($playerId, $decrease) {
+        self::DbQuery("UPDATE player set player_influence = player_influence - ${decrease} where player_id = ${playerId}");
     }
 
     function getPlayerAttack($playerId) {
@@ -492,6 +525,7 @@ class HogwartsBattle extends Table
     }
 
     function gainAttack($playerId, $gain) {
+        self::incStat($gain, 'gained_attack', $playerId);
         self::DbQuery("UPDATE player set player_attack = player_attack + ${gain} where player_id = ${playerId}");
     }
 
@@ -500,17 +534,26 @@ class HogwartsBattle extends Table
     }
 
     function gainHealth($playerId, $gain) {
+        $activePlayerId = self::getActivePlayerId();
+        if ($playerId == $activePlayerId) {
+            self::incStat($gain, 'healed_self', $playerId);
+        } else {
+            self::incStat($gain, 'healed_others', $activePlayerId);
+            self::incStat($gain, 'healed_by_others', $playerId);
+        }
         self::DbQuery("UPDATE player set player_health = player_health + ${gain} where player_id = ${playerId}");
     }
 
     function gainHealthByHeroId($heroId, $gain) {
-        self::DbQuery("UPDATE player set player_health = player_health + ${gain} where player_hero = ${heroId}");
+        $playerId = $this->getPlayerIdByHeroId($heroId);
+        $this->gainHealth($playerId, $gain);
     }
 
     function decreaseHealth($playerId, $decrease) {
         if ($decrease > 1 && $this->playerMax1Damage($playerId)) {
             $decrease = 1;
         }
+        self::incStat($decrease, 'health_lost', $playerId);
         self::DbQuery("UPDATE player set player_health = player_health - ${decrease} where player_id = ${playerId}");
     }
 
@@ -576,6 +619,7 @@ class HogwartsBattle extends Table
             }
         }
         foreach ($playerIds as $playerId) {
+            self::incStat($numberOfCards, 'cards_drawn', $playerId);
             $newHandCards = self::getDeck($playerId)->pickCards($numberOfCards, 'deck', $playerId);
             self::notifyPlayer($playerId, 'newHandCards', '', array('new_hand_cards' => $newHandCards));
         }
@@ -778,6 +822,8 @@ class HogwartsBattle extends Table
                 break;
             case '-1loc_token':
                 if (!$this->isLocationEmpty()) {
+                    self::incStat(1, 'locations_token_removed');
+                    self::incStat(1, 'locations_token_removed', self::getActivePlayerId());
                     $marker = self::incGameStateValue('location_marker', -1);
                     self::notifyAllPlayers('locationUpdate', clienttranslate('1 ${location_icon} was removed from the Location'),
                         array('marker' => $marker, 'location_icon' => $this->getLocationIcon())
@@ -925,8 +971,10 @@ class HogwartsBattle extends Table
                 break;
             case '+1loc_token':
                 if ($this->isLocationFull()) {
+                    self::incStat(1, 'locations_full_prevention');
                     self::notifyAllPlayers('locationFull', clienttranslate('Villains already controlling the Location'), array ());
                 } else {
+                    self::incStat(1, 'locations_token_added');
                     $marker = self::incGameStateValue('location_marker', 1);
                     self::notifyAllPlayers('locationUpdate', clienttranslate('1 ${location_icon} was added to the Location') . '${source_name}',
                         array (
@@ -975,6 +1023,7 @@ class HogwartsBattle extends Table
         $darkArtsCardsRevealed = self::getGameStateValue('dark_arts_cards_revealed');
         $needToRevel = $darkArtsCardsRevealed < $location['dark_arts_cards'];
         if ($needToRevel) {
+            self::incStat(1, 'dark_arts_drawn', self::getActivePlayerId());
             $card = $this->darkArtsCards->pickCardForLocation('deck', 'hand');
             $darkArtsCard = $this->darkArtsCardsLibrary->getDarkArtsCard($card['type'], $card['type_arg']);
             self::notifyAllPlayers('darkArtsCardRevealed', clienttranslate('${hero_name} reveals') . ' <b>${dark_arts_card}</b>',
@@ -1060,6 +1109,7 @@ class HogwartsBattle extends Table
             throw new feException('Villain doesn\'t have enough health to suffer ' . $damage . ' damage');
         }
 
+        self::incStat(1, 'villains_damaged', $playerId);
         $this->decreaseAttack($playerId, $damage);
 
         if ($dmg < $villainCard->health) {
@@ -1111,6 +1161,7 @@ class HogwartsBattle extends Table
         if (is_null($card) || $card['location'] != 'hand') {
             throw new feException( "Selected card is not in your hand" );
         }
+        self::incStat(1, 'cards_discarded', $playerId);
         $deck->moveCard($cardId, 'discard');
 
         self::notifyAllPlayers('cardDiscarded', clienttranslate('${hero_name} discards ${card_name}'),
@@ -1153,7 +1204,12 @@ class HogwartsBattle extends Table
         if ($this->getPlayerInfluence($playerId) < $hogwartsCard->cost) {
             throw new feException('You don\'t have enough influence to acquire that hogwarts card');
         }
-        self::DbQuery("UPDATE player set player_influence = player_influence - " . $hogwartsCard->cost . " where player_id = " . $playerId);
+        self::incStat($hogwartsCard->cost, 'influence_spent_on_acquire', $playerId);
+        $this->decreaseInfluence($playerId, $hogwartsCard->cost);
+        self::incStat(1, 'cards_acquired', $playerId);
+        if ($hogwartsCard->type == HogwartsCards::$itemType) { self::incStat(1, 'items_acquired', $playerId); }
+        if ($hogwartsCard->type == HogwartsCards::$spellType) { self::incStat(1, 'spells_acquired', $playerId); }
+        if ($hogwartsCard->type == HogwartsCards::$allyType) { self::incStat(1, 'allies_acquired', $playerId); }
 
         // Add acquired card to discard pile
         $this->hogwartsCards->moveCard($cardId, 'dev0');
@@ -1510,6 +1566,8 @@ class HogwartsBattle extends Table
     }
 
     function stVillainDefeated() {
+        self::incStat(1, 'villains_defeated');
+        self::incStat(1, 'villains_defeated', self::getActivePlayerId());
         $villainsLeft = $this->villainCards->countCardInLocation('deck');
         $activeVillains = $this->villainCards->countCardInLocation('hand');
 
@@ -1541,6 +1599,7 @@ class HogwartsBattle extends Table
 
     function stEndTurn() {
         $playerId = self::getActivePlayerId();
+        self::incStat(1, 'turns_number', $playerId);
         $deck = self::getDeck($playerId);
 
         // Clean up board and draw 5 new cards
@@ -1577,6 +1636,7 @@ class HogwartsBattle extends Table
     }
 
     function stRevealLocation() {
+        self::incStat(1, 'locations_lost');
         $locationNumber = self::getGameStateValue('location_number');
         $locationTotal = self::getGameStateValue('location_total');
         if ($locationNumber < $locationTotal) {
